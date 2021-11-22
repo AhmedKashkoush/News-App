@@ -5,9 +5,11 @@ import 'package:news_app/View/Widgets/indicators.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class NewsScreen extends StatefulWidget {
+  final String id;
   final NewsModel? model;
 
-  const NewsScreen({Key? key, required this.model}) : super(key: key);
+  const NewsScreen({Key? key, required this.model, required this.id})
+      : super(key: key);
 
   @override
   _NewsScreenState createState() => _NewsScreenState();
@@ -91,13 +93,20 @@ class _NewsScreenState extends State<NewsScreen> {
       seeMoreShown = false;
     }
     return Hero(
-      tag: widget.model!.title != null ? widget.model!.title! : 'null title',
+      tag: widget.id,
       child: ScaffoldMessenger(
         child: Scaffold(
           extendBodyBehindAppBar: true,
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
+            leading: BackButton(
+              color: Theme.of(context).iconTheme.color,
+              onPressed: () {
+                //controller!.reverse();
+                Navigator.of(context).pop();
+              },
+            ),
           ),
           body: SingleChildScrollView(
             child: Column(

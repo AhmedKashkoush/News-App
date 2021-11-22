@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:connectivity/connectivity.dart';
 import 'package:flutter/cupertino.dart';
@@ -12,6 +13,7 @@ import 'package:news_app/View/Views/settings_view.dart';
 import 'package:news_app/View/Views/search_view.dart';
 import 'package:news_app/View/Widgets/indicators.dart';
 import 'package:news_app/View/Widgets/news_card_widget.dart';
+import 'package:news_app/View/Widgets/snack_bars.dart';
 import 'package:news_app/ViewModel/ViewModels/home_view_model.dart';
 
 import 'account_view.dart';
@@ -37,7 +39,8 @@ class _HomeScreenState extends State<HomeScreen>
   bool hadError = false;
 
   final String _country = 'eg';
-  final String _category = 'business';
+  final List<String> _categories = ['business', 'politics', 'sports'];
+  //final String _category = 'business';
   ScrollController? newsListController = ScrollController();
   AnimationController? slideTransitionController;
 
@@ -73,14 +76,19 @@ class _HomeScreenState extends State<HomeScreen>
 
         if (connectivityCurrentState != connectivity) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: const Text(
-                'Back Online',
-                style: const TextStyle(color: Colors.white),
-              ),
+            CustomSnackBar(
+              text: 'Back Online',
               backgroundColor: Colors.green,
-              duration: const Duration(seconds: 2),
+              seconds: 2,
             ),
+            // const SnackBar(
+            //   content: const Text(
+            //     'Back Online',
+            //     style: const TextStyle(color: Colors.white),
+            //   ),
+            //   backgroundColor: Colors.green,
+            //   duration: const Duration(seconds: 2),
+            // ),
           );
         }
       } else {
@@ -91,14 +99,19 @@ class _HomeScreenState extends State<HomeScreen>
           });
         if (connectivityCurrentState != connectivity) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text(
-                'You Are Offline',
-                style: const TextStyle(color: Colors.white),
-              ),
+            CustomSnackBar(
+              text: 'You Are Offline',
               backgroundColor: Colors.grey[850],
-              duration: const Duration(seconds: 2),
+              seconds: 2,
             ),
+            // SnackBar(
+            //   content: const Text(
+            //     'You Are Offline',
+            //     style: const TextStyle(color: Colors.white,fontWeight:FontWeight.bold),
+            //   ),
+            //   backgroundColor: Colors.grey[850],
+            //   duration: const Duration(seconds: 2),
+            // ),
           );
         }
       }
@@ -124,21 +137,23 @@ class _HomeScreenState extends State<HomeScreen>
 
   void loadNews() async {
     if (!isLoading) setState(() => isLoading = true);
+    final int _categoriesIndex = Random().nextInt(_categories.length);
     this.news = await homeViewModel.getTopHeadLineNews(
         TopHeadLineNewsApi(),
         news!.isNotEmpty ? news!.indexOf(news!.last) + 1 : 0,
         _country,
-        _category);
+        _categories[_categoriesIndex]);
     if (isLoading) setState(() => isLoading = false);
   }
 
   void loadMoreNews() async {
     if (!loadMore) setState(() => loadMore = true);
+    final int _categoriesIndex = Random().nextInt(_categories.length);
     List<NewsModel>? loaded = await homeViewModel.getTopHeadLineNews(
         TopHeadLineNewsApi(),
         news!.isNotEmpty ? news!.indexOf(news!.last) + 1 : 0,
         _country,
-        _category);
+        _categories[_categoriesIndex]);
     loaded!.forEach((element) {
       this.news!.add(element);
     });
@@ -171,13 +186,15 @@ class _HomeScreenState extends State<HomeScreen>
         body: RefreshIndicator(
           key: refreshKey,
           onRefresh: () async {
+            loading = true;
             await Future.delayed(const Duration(milliseconds: 200), () async {
               news!.clear();
+              final int _categoriesIndex = Random().nextInt(_categories.length);
               this.news = await homeViewModel.getTopHeadLineNews(
                   TopHeadLineNewsApi(),
                   news!.isNotEmpty ? news!.indexOf(news!.last) + 1 : 0,
                   _country,
-                  _category);
+                  _categories[_categoriesIndex]);
               loading = false;
               setState(() {
                 //loadNews();
@@ -226,6 +243,7 @@ class _HomeScreenState extends State<HomeScreen>
       floating: true,
       pinned: true,
       snap: true,
+      //primary: false,
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(74),
         child: GestureDetector(
@@ -252,7 +270,7 @@ class _HomeScreenState extends State<HomeScreen>
             );
           },
           child: Container(
-            color: Theme.of(context).primaryColor,
+            color: Colors.transparent,
             padding: const EdgeInsets.all(8),
             child: Card(
               color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.4),
@@ -433,12 +451,16 @@ class _HomeScreenState extends State<HomeScreen>
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Icon(
-                  Icons.wifi_off_rounded,
+                  connectivityCurrentState == ConnectivityResult.none
+                      ? Icons.wifi_off_rounded
+                      : Icons.warning_amber_rounded,
                   size: 115,
                   color: Theme.of(context).iconTheme.color!.withOpacity(0.3),
                 ),
                 Text(
-                  'Check Your Internet Connection',
+                  connectivityCurrentState == ConnectivityResult.none
+                      ? 'Check Your Internet Connection'
+                      : 'Somthing Went Wrong',
                   style: TextStyle(
                     fontSize: 20,
                     color: Theme.of(context)
@@ -474,55 +496,52 @@ class _HomeScreenState extends State<HomeScreen>
                 // FocusScope.of(context).unfocus();
                 SystemChannels.textInput.invokeMethod('TextInput.hide');
               },
-              child: SingleChildScrollView(
-                primary: true,
-                physics: BouncingScrollPhysics(),
-                child: Column(
-                  children: [
-                    ...news!
-                        .map((e) => NewsCardWidget(
-                              model: e,
-                            ))
-                        .toList(),
-                    loadMore && !hadError
-                        ? SizedBox(
-                            height: 50,
-                            child: const CustomCircularIndicator(
-                              color: Colors.red,
-                            ),
-                          )
-                        : hadError
-                            ? Center(
-                                child: Column(
-                                  children: [
-                                    Icon(
-                                      Icons.wifi_off_rounded,
-                                      size: 50,
+              child: Column(
+                children: [
+                  ...news!
+                      .map((e) => NewsCardWidget(
+                            id: '${news!.indexOf(e)}',
+                            model: e,
+                          ))
+                      .toList(),
+                  loadMore && !hadError
+                      ? const SizedBox(
+                          height: 50,
+                          child: const CustomCircularIndicator(
+                            color: Colors.red,
+                          ),
+                        )
+                      : hadError
+                          ? Center(
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.wifi_off_rounded,
+                                    size: 50,
+                                    color: Theme.of(context)
+                                        .iconTheme
+                                        .color!
+                                        .withOpacity(0.3),
+                                  ),
+                                  Text(
+                                    'Check Your Internet Connection',
+                                    style: TextStyle(
+                                      fontSize: 18,
                                       color: Theme.of(context)
-                                          .iconTheme
+                                          .textTheme
+                                          .headline4!
                                           .color!
                                           .withOpacity(0.3),
                                     ),
-                                    Text(
-                                      'Check Your Internet Connection',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        color: Theme.of(context)
-                                            .textTheme
-                                            .headline4!
-                                            .color!
-                                            .withOpacity(0.3),
-                                      ),
-                                    ),
-                                    const SizedBox(
-                                      height: 15,
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : const SizedBox(),
-                  ],
-                ),
+                                  ),
+                                  const SizedBox(
+                                    height: 15,
+                                  ),
+                                ],
+                              ),
+                            )
+                          : const SizedBox(),
+                ],
               ),
             );
 
@@ -564,7 +583,7 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildDrawer() {
     List<Widget> _drawerList = [
       GestureDetector(
-        onTap: () => popDrawerAndNavigateTo(AccountScreen()),
+        onTap: () => popDrawerAndNavigateTo(const AccountScreen()),
         child: ListTile(
           leading: CircleAvatar(
             backgroundColor: Colors.grey[700]!.withOpacity(0.4),
@@ -596,7 +615,7 @@ class _HomeScreenState extends State<HomeScreen>
       _buildeListTile(
         title: 'Account',
         icon: Icons.account_circle_outlined,
-        onTap: () => popDrawerAndNavigateTo(AccountScreen()),
+        onTap: () => popDrawerAndNavigateTo(const AccountScreen()),
       ),
       _buildeListTile(
         title: 'Notifications',
@@ -613,7 +632,7 @@ class _HomeScreenState extends State<HomeScreen>
           title: 'Settings',
           icon: Icons.settings_outlined,
           onTap: () {
-            popDrawerAndNavigateTo(SettingsScreen());
+            popDrawerAndNavigateTo(const SettingsScreen());
           }),
       _buildeListTile(
           title: 'About', icon: Icons.info_outline_rounded, onTap: () {}),

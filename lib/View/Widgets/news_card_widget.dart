@@ -6,8 +6,10 @@ import 'package:news_app/View/Views/news_view.dart';
 import 'image_widgets.dart';
 
 class NewsCardWidget extends StatelessWidget {
+  final String id;
   final NewsModel model;
-  const NewsCardWidget({Key? key, required this.model}) : super(key: key);
+  const NewsCardWidget({Key? key, required this.model, required this.id})
+      : super(key: key);
 
   // Widget _buildImage() {
   //   Widget _image;
@@ -78,7 +80,7 @@ class NewsCardWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Hero(
-      tag: model.title != null ? model.title! : 'null title',
+      tag: id,
       child: Card(
         clipBehavior: Clip.antiAlias,
         margin: const EdgeInsets.all(10),
@@ -154,6 +156,7 @@ class NewsCardWidget extends StatelessWidget {
                     Navigator.of(context).push(MaterialPageRoute(
                         builder: (context) => NewsScreen(
                               model: this.model,
+                              id: id,
                             )));
                   },
                 ),
