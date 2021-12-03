@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:news_app/Model/Models/news_model.dart';
 import 'package:news_app/View/Widgets/image_widgets.dart';
 import 'package:news_app/View/Widgets/indicators.dart';
+import 'package:news_app/View/Widgets/see_more.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class NewsScreen extends StatefulWidget {
@@ -17,7 +18,7 @@ class NewsScreen extends StatefulWidget {
 
 class _NewsScreenState extends State<NewsScreen> {
   bool isMore = false;
-  final int contentMaxLines = 4;
+  final int contentMaxLenght = 60;
   Widget _buildImage() {
     return CustomCachedNetworkImage(
       imageUrl: widget.model!.urlToImage,
@@ -75,23 +76,24 @@ class _NewsScreenState extends State<NewsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final int lines;
-    final TextOverflow overFlow;
-    final bool seeMoreShown;
-    if (widget.model!.content != null) {
-      final int? contentLines = '\n'.allMatches(widget.model!.content!).length;
-      lines = isMore && contentLines! > contentMaxLines
-          ? contentLines
-          : contentMaxLines;
-      overFlow = isMore && contentLines! > contentMaxLines
-          ? TextOverflow.visible
-          : TextOverflow.ellipsis;
-      seeMoreShown = (!isMore && contentLines! > contentMaxLines);
-    } else {
-      lines = 0;
-      overFlow = TextOverflow.ellipsis;
-      seeMoreShown = false;
-    }
+    // final int lines;
+    // final TextOverflow overFlow;
+    // final bool seeMoreShown;
+    // int? contentLines;
+    // if (widget.model!.content != null) {
+    //   contentLines = '\n'.allMatches(widget.model!.content!).length;
+    //   lines = isMore && contentLines > contentMaxLines
+    //       ? contentLines
+    //       : contentMaxLines;
+    //   overFlow = isMore && contentLines > contentMaxLines
+    //       ? TextOverflow.visible
+    //       : TextOverflow.ellipsis;
+    //   seeMoreShown = (!isMore && contentLines > contentMaxLines);
+    // } else {
+    //   lines = 0;
+    //   overFlow = TextOverflow.ellipsis;
+    //   seeMoreShown = false;
+    // }
     return Hero(
       tag: widget.id,
       child: ScaffoldMessenger(
@@ -185,97 +187,106 @@ class _NewsScreenState extends State<NewsScreen> {
                       ),
                       widget.model!.description != null &&
                               widget.model!.description!.isNotEmpty
-                          ? Text(
-                              'Description: ${widget.model!.description}',
-                              overflow: TextOverflow.fade,
-                              style: TextStyle(
-                                  color: Theme.of(context)
-                                      .textTheme
-                                      .headline4!
-                                      .color,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold),
+                          ? Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Description:',
+                                  overflow: TextOverflow.fade,
+                                  style: TextStyle(
+                                      color: Theme.of(context)
+                                          .textTheme
+                                          .headline4!
+                                          .color,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                SeeMoreWidget(
+                                  text: widget.model!.description,
+                                  textLength: contentMaxLenght,
+                                ),
+                              ],
                             )
                           : const SizedBox(),
                       const SizedBox(
                         height: 25,
                       ),
-                      widget.model!.content != null &&
-                              widget.model!.content!.isNotEmpty
-                          ? Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Content: ',
-                                  style: TextStyle(
-                                    color: Theme.of(context)
-                                        .textTheme
-                                        .headline4!
-                                        .color,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: () {
-                                      setState(() {
-                                        isMore = !isMore;
-                                      });
-                                    },
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          '${widget.model!.content}',
-                                          maxLines: lines,
-                                          overflow: overFlow,
-                                          style: TextStyle(
-                                            color: Theme.of(context)
-                                                .textTheme
-                                                .headline4!
-                                                .color,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                        seeMoreShown
-                                            ? Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.end,
-                                                children: [
-                                                  InkWell(
-                                                    onTap: () {
-                                                      setState(() {
-                                                        isMore = !isMore;
-                                                      });
-                                                    },
-                                                    child: Text(
-                                                      'See More',
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      style: TextStyle(
-                                                        color: Theme.of(context)
-                                                            .textTheme
-                                                            .headline4!
-                                                            .color!
-                                                            .withOpacity(0.4),
-                                                        fontSize: 14,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              )
-                                            : const SizedBox(),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : const SizedBox(),
+                      // widget.model!.content != null &&
+                      //         widget.model!.content!.isNotEmpty
+                      //     ? Row(
+                      //         crossAxisAlignment: CrossAxisAlignment.start,
+                      //         children: [
+                      //           Text(
+                      //             'Content: ',
+                      //             style: TextStyle(
+                      //               color: Theme.of(context)
+                      //                   .textTheme
+                      //                   .headline4!
+                      //                   .color,
+                      //               fontSize: 16,
+                      //               fontWeight: FontWeight.bold,
+                      //             ),
+                      //           ),
+                      //           Expanded(
+                      //             child: InkWell(
+                      //               onTap: () {
+                      //                 setState(() {
+                      //                   isMore = !isMore;
+                      //                 });
+                      //               },
+                      //               child: Column(
+                      //                 crossAxisAlignment:
+                      //                     CrossAxisAlignment.start,
+                      //                 children: [
+                      //                   Text(
+                      //                     '${widget.model!.content}',
+                      //                     maxLines: lines,
+                      //                     overflow: overFlow,
+                      //                     style: TextStyle(
+                      //                       color: Theme.of(context)
+                      //                           .textTheme
+                      //                           .headline4!
+                      //                           .color,
+                      //                       fontSize: 14,
+                      //                     ),
+                      //                   ),
+                      //                   seeMoreShown
+                      //                       ? Row(
+                      //                           mainAxisAlignment:
+                      //                               MainAxisAlignment.end,
+                      //                           children: [
+                      //                             InkWell(
+                      //                               onTap: () {
+                      //                                 setState(() {
+                      //                                   isMore = !isMore;
+                      //                                 });
+                      //                               },
+                      //                               child: Text(
+                      //                                 'See More',
+                      //                                 overflow:
+                      //                                     TextOverflow.ellipsis,
+                      //                                 style: TextStyle(
+                      //                                   color: Theme.of(context)
+                      //                                       .textTheme
+                      //                                       .headline4!
+                      //                                       .color!
+                      //                                       .withOpacity(0.4),
+                      //                                   fontSize: 14,
+                      //                                   fontWeight:
+                      //                                       FontWeight.bold,
+                      //                                 ),
+                      //                               ),
+                      //                             ),
+                      //                           ],
+                      //                         )
+                      //                       : const SizedBox(),
+                      //                 ],
+                      //               ),
+                      //             ),
+                      //           ),
+                      //         ],
+                      //       )
+                      //     : const SizedBox(),
                       const SizedBox(
                         height: 30,
                       ),

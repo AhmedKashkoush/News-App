@@ -153,7 +153,7 @@ class NewsCardWidget extends StatelessWidget {
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: () {
-                    Navigator.of(context).push(MaterialPageRoute(
+                    Navigator.of(context).push(CupertinoPageRoute(
                         builder: (context) => NewsScreen(
                               model: this.model,
                               id: id,

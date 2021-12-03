@@ -5,12 +5,14 @@ import 'dart:math';
 import 'package:connectivity/connectivity.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:news_app/Model/Apis/top_headline_news_api.dart';
 import 'package:news_app/Model/Models/news_model.dart';
 import 'package:news_app/View/Views/settings_view.dart';
 import 'package:news_app/View/Views/search_view.dart';
+import 'package:news_app/View/Widgets/collapsible_bottom_bar.dart';
 import 'package:news_app/View/Widgets/indicators.dart';
 import 'package:news_app/View/Widgets/news_card_widget.dart';
 import 'package:news_app/View/Widgets/snack_bars.dart';
@@ -37,6 +39,34 @@ class _HomeScreenState extends State<HomeScreen>
   bool isLoading = false;
   bool loadMore = false;
   bool hadError = false;
+  final List<Map<String, dynamic>> _tabs = [
+    {
+      'label': 'Home',
+      'icon': Icons.home_outlined,
+      'active': Icons.home,
+    },
+    {
+      'label': 'Business',
+      'icon': Icons.business_center_outlined,
+      'active': Icons.business_center,
+    },
+    {
+      'label': 'Sports',
+      'icon': Icons.sports_basketball_outlined,
+      'active': Icons.sports_basketball,
+    },
+    {
+      'label': 'Politics',
+      'icon': Icons.policy_outlined,
+      'active': Icons.policy,
+    },
+  ];
+
+  List<int> _tabStack = [];
+
+  int _currentTab = 0;
+
+  bool bottomCollapse = false;
 
   final String _country = 'eg';
   final List<String> _categories = ['business', 'politics', 'sports'];
@@ -50,14 +80,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   void initState() {
-    newsListController!.addListener(() {
-      if (newsListController!.position.pixels >
-          newsListController!.position.minScrollExtent / 2) {
-        if (homeViewModel.hasMore) {
-          if (!loadMore) loadMoreNews();
-        }
-      }
-    });
+    newsListController!.addListener(_listener);
     slideTransitionController = AnimationController(
       vsync: this,
       duration: const Duration(
@@ -119,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen>
     });
 
     print('init');
-    loadNews();
+    //loadNews();
     super.initState();
   }
 
@@ -129,10 +152,25 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   void dispose() {
+    newsListController!.removeListener(_listener);
     newsListController!.dispose();
     slideTransitionController!.dispose();
     connectivitySubscribtion!.cancel();
     super.dispose();
+  }
+
+  void _listener() {
+    if (newsListController!.position.userScrollDirection ==
+        ScrollDirection.reverse) {
+      if (!bottomCollapse) setState(() => bottomCollapse = true);
+    } else if (bottomCollapse) setState(() => bottomCollapse = false);
+
+    if (newsListController!.position.pixels >
+        newsListController!.position.minScrollExtent / 2) {
+      if (homeViewModel.hasMore && !isLoading && !loading) {
+        if (!loadMore) loadMoreNews();
+      }
+    }
   }
 
   void loadNews() async {
@@ -154,80 +192,120 @@ class _HomeScreenState extends State<HomeScreen>
         news!.isNotEmpty ? news!.indexOf(news!.last) + 1 : 0,
         _country,
         _categories[_categoriesIndex]);
-    loaded!.forEach((element) {
-      this.news!.add(element);
-    });
+    if (!loading) {
+      loaded!.forEach((element) {
+        this.news!.add(element);
+      });
+    }
     if (loadMore) setState(() => loadMore = false);
-    if (loaded.isEmpty) {
-      if (!hadError) setState(() => hadError = true);
-    } else if (hadError) setState(() => hadError = false);
+    // if (loaded.isEmpty) {
+    //   if (!hadError) setState(() => hadError = true);
+    // } else if (hadError) setState(() => hadError = false);
   }
 
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        return newsListController!.position.pixels >
-                    newsListController!.position.minScrollExtent &&
-                !_scaffoldKey.currentState!.isDrawerOpen
-            ? await showRefresh()
-            : true;
+        if (newsListController!.position.pixels >
+                newsListController!.position.minScrollExtent &&
+            !_scaffoldKey.currentState!.isDrawerOpen)
+          return await showRefresh();
+        else if (_tabStack.isNotEmpty) {
+          setState(() {
+            _currentTab = _tabStack[_tabStack.length - 1];
+            _tabStack.removeAt(_tabStack.length - 1);
+          });
+          return false;
+        } else
+          return true;
       },
       child: Scaffold(
-        key: _scaffoldKey,
-        extendBody: true,
-        // extendBodyBehindAppBar: true,
-        drawer: Drawer(
-          child: Material(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            child: _buildDrawer(),
+          key: _scaffoldKey,
+          //extendBody: true,
+          // extendBodyBehindAppBar: true,
+          drawer: Drawer(
+            child: Material(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              child: _buildDrawer(),
+            ),
           ),
-        ),
-        body: RefreshIndicator(
-          key: refreshKey,
-          onRefresh: () async {
-            loading = true;
-            await Future.delayed(const Duration(milliseconds: 200), () async {
-              news!.clear();
-              final int _categoriesIndex = Random().nextInt(_categories.length);
-              this.news = await homeViewModel.getTopHeadLineNews(
-                  TopHeadLineNewsApi(),
-                  news!.isNotEmpty ? news!.indexOf(news!.last) + 1 : 0,
-                  _country,
-                  _categories[_categoriesIndex]);
-              loading = false;
-              setState(() {
-                //loadNews();
+          body: RefreshIndicator(
+            key: refreshKey,
+            onRefresh: () async {
+              loading = true;
+              await Future.delayed(const Duration(milliseconds: 200), () async {
+                news!.clear();
+                final int _categoriesIndex =
+                    Random().nextInt(_categories.length);
+                this.news = await homeViewModel.getTopHeadLineNews(
+                    TopHeadLineNewsApi(),
+                    news!.isNotEmpty ? news!.indexOf(news!.last) + 1 : 0,
+                    _country,
+                    _categories[_categoriesIndex]);
+                loading = false;
+                setState(() {
+                  newsListController!
+                      .jumpTo(newsListController!.position.minScrollExtent);
+                });
               });
-            });
-          },
-          strokeWidth: 3,
-          color: Colors.red,
-          backgroundColor: Theme.of(context).backgroundColor,
-          edgeOffset: 160,
-          child: CustomScrollView(
-            //primary: false,
-            physics: news!.isNotEmpty
-                ? const BouncingScrollPhysics()
-                : const NeverScrollableScrollPhysics(),
-            controller: newsListController,
-            slivers: [
-              buildSliverAppBar(),
-              SliverToBoxAdapter(
-                child: buildAlternateBody(),
-              )
-            ],
+            },
+            color: Colors.red,
+            backgroundColor: Theme.of(context).backgroundColor,
+            edgeOffset: 160,
+            child: CustomScrollView(
+              //primary: false,
+              physics: news!.isNotEmpty
+                  ? const BouncingScrollPhysics()
+                  : const NeverScrollableScrollPhysics(),
+              controller: newsListController,
+              slivers: [
+                buildSliverAppBar(),
+                SliverToBoxAdapter(
+                  child: _buildBody(),
+                )
+              ],
+            ),
           ),
-        ),
-        //   NestedScrollView(
-        // physics: NeverScrollableScrollPhysics(),
-        // controller: newsListController,
-        // headerSliverBuilder: (context, i) => [
-        //   buildSliverAppBar(),
-        // ],
-        // body: buildBody(),
-        // ),
-      ),
+          //   NestedScrollView(
+          // physics: NeverScrollableScrollPhysics(),
+          // controller: newsListController,
+          // headerSliverBuilder: (context, i) => [
+          //   buildSliverAppBar(),
+          // ],
+          // body: buildBody(),
+          // ),
+          bottomNavigationBar: CollapsibleBottomNavigationBar(
+            controller: newsListController!,
+            bottomNavigationBar: BottomNavigationBar(
+              unselectedItemColor: Theme.of(context)
+                  .textTheme
+                  .headline4!
+                  .color!
+                  .withOpacity(0.4),
+              selectedItemColor: Colors.red,
+              currentIndex: _currentTab,
+              type: BottomNavigationBarType.fixed,
+              onTap: (index) {
+                if (_currentTab != index) {
+                  setState(() {
+                    if (_tabStack.isEmpty ||
+                        (_tabStack.isNotEmpty && _currentTab != _tabStack.last))
+                      _tabStack.add(_currentTab);
+                    _currentTab = index;
+                  });
+                }
+              },
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              items: _tabs
+                  .map((e) => BottomNavigationBarItem(
+                        icon: Icon(e['icon']),
+                        activeIcon: Icon(e['active']),
+                        label: e['label'],
+                      ))
+                  .toList(),
+            ),
+          )),
     );
   }
 
@@ -435,115 +513,331 @@ class _HomeScreenState extends State<HomeScreen>
   //             ),
   //     );
 
-  Widget buildAlternateBody() => news!.isEmpty && !isLoading
-      ? GestureDetector(
-          onTap: () {
-            // FocusScope.of(context).unfocus();
-            SystemChannels.textInput.invokeMethod('TextInput.hide');
-          },
-          child: Container(
-            color: Colors.transparent,
-            width: MediaQuery.of(context).size.width,
-            height: MediaQuery.of(context).size.height * 0.75,
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(
-                  connectivityCurrentState == ConnectivityResult.none
-                      ? Icons.wifi_off_rounded
-                      : Icons.warning_amber_rounded,
-                  size: 115,
-                  color: Theme.of(context).iconTheme.color!.withOpacity(0.3),
-                ),
-                Text(
-                  connectivityCurrentState == ConnectivityResult.none
-                      ? 'Check Your Internet Connection'
-                      : 'Somthing Went Wrong',
-                  style: TextStyle(
-                    fontSize: 20,
-                    color: Theme.of(context)
-                        .textTheme
-                        .headline4!
-                        .color!
-                        .withOpacity(0.3),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        )
-      : news!.isEmpty && isLoading
-          ? GestureDetector(
-              onTap: () {
-                // FocusScope.of(context).unfocus();
-                SystemChannels.textInput.invokeMethod('TextInput.hide');
-              },
-              child: Center(
-                child: Container(
-                  color: Colors.transparent,
-                  width: MediaQuery.of(context).size.width,
-                  height: MediaQuery.of(context).size.height * 0.75,
-                  child: const CustomCircularIndicator(
-                    color: Colors.red,
-                  ),
-                ),
+  Widget _buildBody() => GestureDetector(
+        onTap: () => SystemChannels.textInput.invokeMethod('TextInput.hide'),
+        child: _buildBodyContent(),
+      );
+  // Widget buildAlternateBody() => news!.isEmpty && !isLoading
+  //     ? GestureDetector(
+  //         onTap: () {
+  //           // FocusScope.of(context).unfocus();
+  //           SystemChannels.textInput.invokeMethod('TextInput.hide');
+  //         },
+  //         child: Container(
+  //           color: Colors.transparent,
+  //           width: MediaQuery.of(context).size.width,
+  //           height: MediaQuery.of(context).size.height * 0.75,
+  //           child: Column(
+  //             mainAxisSize: MainAxisSize.max,
+  //             mainAxisAlignment: MainAxisAlignment.center,
+  //             crossAxisAlignment: CrossAxisAlignment.center,
+  //             children: [
+  //               Icon(
+  //                 connectivityCurrentState == ConnectivityResult.none
+  //                     ? Icons.wifi_off_rounded
+  //                     : Icons.warning_amber_rounded,
+  //                 size: 115,
+  //                 color: Theme.of(context).iconTheme.color!.withOpacity(0.3),
+  //               ),
+  //               Text(
+  //                 connectivityCurrentState == ConnectivityResult.none
+  //                     ? 'Check Your Internet Connection'
+  //                     : 'Somthing Went Wrong',
+  //                 style: TextStyle(
+  //                   fontSize: 20,
+  //                   color: Theme.of(context)
+  //                       .textTheme
+  //                       .headline4!
+  //                       .color!
+  //                       .withOpacity(0.3),
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       )
+  //     : news!.isEmpty && isLoading
+  //         ? GestureDetector(
+  //             onTap: () {
+  //               // FocusScope.of(context).unfocus();
+  //               SystemChannels.textInput.invokeMethod('TextInput.hide');
+  //             },
+  //             child: Center(
+  //               child: Container(
+  //                 color: Colors.transparent,
+  //                 width: MediaQuery.of(context).size.width,
+  //                 height: MediaQuery.of(context).size.height * 0.75,
+  //                 child: const CustomCircularIndicator(
+  //                   color: Colors.red,
+  //                 ),
+  //               ),
+  //             ),
+  //           )
+  //         : GestureDetector(
+  //             onTap: () {
+  //               // FocusScope.of(context).unfocus();
+  //               SystemChannels.textInput.invokeMethod('TextInput.hide');
+  //             },
+  //             child: Column(
+  //               children: [
+  //                 ...news!
+  //                     .map((e) => NewsCardWidget(
+  //                           id: '${news!.indexOf(e)}',
+  //                           model: e,
+  //                         ))
+  //                     .toList(),
+  //                 loadMore && !hadError
+  //                     ? const SizedBox(
+  //                         height: 50,
+  //                         child: const CustomCircularIndicator(
+  //                           color: Colors.red,
+  //                         ),
+  //                       )
+  //                     : hadError
+  //                         ? Center(
+  //                             child: Column(
+  //                               children: [
+  //                                 Icon(
+  //                                   Icons.wifi_off_rounded,
+  //                                   size: 50,
+  //                                   color: Theme.of(context)
+  //                                       .iconTheme
+  //                                       .color!
+  //                                       .withOpacity(0.3),
+  //                                 ),
+  //                                 Text(
+  //                                   'Check Your Internet Connection',
+  //                                   style: TextStyle(
+  //                                     fontSize: 18,
+  //                                     color: Theme.of(context)
+  //                                         .textTheme
+  //                                         .headline4!
+  //                                         .color!
+  //                                         .withOpacity(0.3),
+  //                                   ),
+  //                                 ),
+  //                                 const SizedBox(
+  //                                   height: 15,
+  //                                 ),
+  //                               ],
+  //                             ),
+  //                           )
+  //                         : const SizedBox(),
+  //               ],
+  //             ),
+  //           );
+
+  Widget _buildBodyContent() =>
+      news!.isEmpty && connectivityCurrentState == ConnectivityResult.none
+          ? Center(
+              child: Container(
+                color: Colors.transparent,
+                width: MediaQuery.of(context).size.width,
+                height: MediaQuery.of(context).size.height * 0.75,
+                child: _buildConnectionError(),
               ),
             )
-          : GestureDetector(
-              onTap: () {
-                // FocusScope.of(context).unfocus();
-                SystemChannels.textInput.invokeMethod('TextInput.hide');
-              },
-              child: Column(
-                children: [
-                  ...news!
-                      .map((e) => NewsCardWidget(
-                            id: '${news!.indexOf(e)}',
-                            model: e,
-                          ))
-                      .toList(),
-                  loadMore && !hadError
-                      ? const SizedBox(
-                          height: 50,
-                          child: const CustomCircularIndicator(
-                            color: Colors.red,
-                          ),
-                        )
-                      : hadError
-                          ? Center(
-                              child: Column(
-                                children: [
-                                  Icon(
-                                    Icons.wifi_off_rounded,
-                                    size: 50,
-                                    color: Theme.of(context)
-                                        .iconTheme
-                                        .color!
-                                        .withOpacity(0.3),
-                                  ),
-                                  Text(
-                                    'Check Your Internet Connection',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      color: Theme.of(context)
-                                          .textTheme
-                                          .headline4!
-                                          .color!
-                                          .withOpacity(0.3),
-                                    ),
-                                  ),
-                                  const SizedBox(
-                                    height: 15,
-                                  ),
-                                ],
-                              ),
-                            )
-                          : const SizedBox(),
-                ],
+          : news!.isEmpty && isLoading
+              ? _buildLoading()
+              : news!.isNotEmpty && !isLoading && !homeViewModel.hasError
+                  ? _buildNewsList()
+                  : Center(
+                      child: Container(
+                        color: Colors.transparent,
+                        width: MediaQuery.of(context).size.width,
+                        height: MediaQuery.of(context).size.height * 0.75,
+                        child: _buildDataError(),
+                      ),
+                    );
+
+  // Widget _buildNewsList() => Column(
+  //       children: [
+  //         ...news!
+  //             .map((e) => NewsCardWidget(
+  //                   id: '${news!.indexOf(e)}',
+  //                   model: e,
+  //                 ))
+  //             .toList(),
+  //         loadMore && !homeViewModel.hasError
+  //             ? const SizedBox(
+  //                 height: 50,
+  //                 child: const CustomCircularIndicator(
+  //                   color: Colors.red,
+  //                 ),
+  //               )
+  //             : !homeViewModel.hasError &&
+  //                     connectivityCurrentState == ConnectivityResult.none
+  //                 ? Center(
+  //                     child: Column(
+  //                       children: [
+  //                         Icon(
+  //                           Icons.wifi_off_rounded,
+  //                           size: 50,
+  //                           color: Theme.of(context)
+  //                               .iconTheme
+  //                               .color!
+  //                               .withOpacity(0.3),
+  //                         ),
+  //                         Text(
+  //                           'Check Your Internet Connection',
+  //                           style: TextStyle(
+  //                             fontSize: 18,
+  //                             color: Theme.of(context)
+  //                                 .textTheme
+  //                                 .headline4!
+  //                                 .color!
+  //                                 .withOpacity(0.3),
+  //                           ),
+  //                         ),
+  //                         const SizedBox(
+  //                           height: 15,
+  //                         ),
+  //                       ],
+  //                     ),
+  //                   )
+  //                 : homeViewModel.hasError
+  //                     ? Center(
+  //                         child: Column(
+  //                           children: [
+  //                             Icon(
+  //                               Icons.warning_amber_rounded,
+  //                               size: 50,
+  //                               color: Theme.of(context)
+  //                                   .iconTheme
+  //                                   .color!
+  //                                   .withOpacity(0.3),
+  //                             ),
+  //                             Text(
+  //                               'Somthing Went Wrong',
+  //                               style: TextStyle(
+  //                                 fontSize: 18,
+  //                                 color: Theme.of(context)
+  //                                     .textTheme
+  //                                     .headline4!
+  //                                     .color!
+  //                                     .withOpacity(0.3),
+  //                               ),
+  //                             ),
+  //                             const SizedBox(
+  //                               height: 15,
+  //                             ),
+  //                           ],
+  //                         ),
+  //                       )
+  //                     : const SizedBox(),
+  //       ],
+  //     );
+  Widget _buildNewsList() => ListView.builder(
+        physics: NeverScrollableScrollPhysics(),
+        shrinkWrap: true,
+        itemCount: news!.length + 1,
+        itemBuilder: (context, index) => index < news!.length
+            ? NewsCardWidget(
+                id: '$index',
+                model: news![index],
+              )
+            : loadMore && !homeViewModel.hasError
+                ? const SizedBox(
+                    height: 50,
+                    child: const CustomCircularIndicator(
+                      color: Colors.red,
+                    ),
+                  )
+                : !homeViewModel.hasError &&
+                        connectivityCurrentState == ConnectivityResult.none
+                    ? _buildListEndError('Connection')
+                    : homeViewModel.hasError
+                        ? _buildListEndError('Data')
+                        : const SizedBox(),
+      );
+  Widget _buildLoading() => Center(
+        child: Container(
+          color: Colors.transparent,
+          width: MediaQuery.of(context).size.width,
+          height: MediaQuery.of(context).size.height * 0.75,
+          child: const CustomCircularIndicator(
+            color: Colors.red,
+          ),
+        ),
+      );
+
+  Widget _buildConnectionError() => Column(
+        mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.wifi_off_rounded,
+            size: 115,
+            color: Theme.of(context).iconTheme.color!.withOpacity(0.3),
+          ),
+          Text(
+            'Check Your Internet Connection',
+            style: TextStyle(
+              fontSize: 20,
+              color: Theme.of(context)
+                  .textTheme
+                  .headline4!
+                  .color!
+                  .withOpacity(0.3),
+            ),
+          ),
+        ],
+      );
+
+  Widget _buildDataError() => Column(
+        mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.warning_amber_rounded,
+            size: 115,
+            color: Theme.of(context).iconTheme.color!.withOpacity(0.3),
+          ),
+          Text(
+            'Somthing Went Wrong',
+            style: TextStyle(
+              fontSize: 20,
+              color: Theme.of(context)
+                  .textTheme
+                  .headline4!
+                  .color!
+                  .withOpacity(0.3),
+            ),
+          ),
+        ],
+      );
+
+  Widget _buildListEndError(String errorType) => Center(
+        child: Column(
+          children: [
+            Icon(
+              errorType == 'Connection'
+                  ? Icons.wifi_off_rounded
+                  : Icons.warning_amber_rounded,
+              size: 50,
+              color: Theme.of(context).iconTheme.color!.withOpacity(0.3),
+            ),
+            Text(
+              errorType == 'Connection'
+                  ? 'Check Your Internet Connection'
+                  : 'Somthing Went Wrong',
+              style: TextStyle(
+                fontSize: 18,
+                color: Theme.of(context)
+                    .textTheme
+                    .headline4!
+                    .color!
+                    .withOpacity(0.3),
               ),
-            );
+            ),
+            const SizedBox(
+              height: 15,
+            ),
+          ],
+        ),
+      );
 
   Widget _buildeListTile(
       {String? title,
@@ -722,7 +1016,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void navigateTo(Widget screen) => Navigator.of(context)
-      .push(CupertinoPageRoute(builder: (context) => screen));
+      .push(MaterialPageRoute(builder: (context) => screen));
 
   Future<bool> showRefresh() async {
     //homeViewModel.hasMore = true;
@@ -731,6 +1025,7 @@ class _HomeScreenState extends State<HomeScreen>
       setState(() {
         loadMore = false;
         hadError = false;
+        bottomCollapse = false;
       });
       newsListController!.animateTo(
           newsListController!.position.minScrollExtent,

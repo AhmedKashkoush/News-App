@@ -36,7 +36,7 @@ class AppTheme {
     //splashColor: Colors.transparent,
     highlightColor: Colors.transparent,
     splashFactory: InkRipple.splashFactory,
-    //pageTransitionsTheme: _pageTransition,
+    pageTransitionsTheme: _pageTransition,
   );
   static final ThemeData? darkTheme = ThemeData(
     primaryColor: Colors.grey[850],
@@ -51,16 +51,16 @@ class AppTheme {
     //splashColor: Colors.transparent,
     highlightColor: Colors.transparent,
     splashFactory: InkRipple.splashFactory,
-    //pageTransitionsTheme: _pageTransition,
+    pageTransitionsTheme: _pageTransition,
   );
   //static ThemeMode getThemeMode({String? themeMode})
 
-  // static PageTransitionsTheme _pageTransition = PageTransitionsTheme(builders: {
-  //   TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-  //   TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-  //   TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
-  //   TargetPlatform.windows: OpenUpwardsPageTransitionsBuilder(),
-  //   TargetPlatform.linux: CupertinoPageTransitionsBuilder(),
-  //   TargetPlatform.fuchsia: OpenUpwardsPageTransitionsBuilder(),
-  // });
+  static PageTransitionsTheme _pageTransition = PageTransitionsTheme(builders: {
+    TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+    TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+    TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+    TargetPlatform.windows: OpenUpwardsPageTransitionsBuilder(),
+    TargetPlatform.linux: CupertinoPageTransitionsBuilder(),
+    TargetPlatform.fuchsia: OpenUpwardsPageTransitionsBuilder(),
+  });
 }
