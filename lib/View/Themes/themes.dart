@@ -37,6 +37,7 @@ class AppTheme {
     highlightColor: Colors.transparent,
     splashFactory: InkRipple.splashFactory,
     pageTransitionsTheme: _pageTransition,
+    visualDensity: VisualDensity.adaptivePlatformDensity,
   );
   static final ThemeData? darkTheme = ThemeData(
     primaryColor: Colors.grey[850],
@@ -52,6 +53,7 @@ class AppTheme {
     highlightColor: Colors.transparent,
     splashFactory: InkRipple.splashFactory,
     pageTransitionsTheme: _pageTransition,
+    visualDensity: VisualDensity.adaptivePlatformDensity,
   );
   //static ThemeMode getThemeMode({String? themeMode})
 

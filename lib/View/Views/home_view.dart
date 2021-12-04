@@ -11,12 +11,11 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:news_app/Model/Apis/top_headline_news_api.dart';
 import 'package:news_app/Model/Models/news_model.dart';
 import 'package:news_app/View/Views/settings_view.dart';
-import 'package:news_app/View/Views/search_view.dart';
-import 'package:news_app/View/Widgets/collapsible_bottom_bar.dart';
-import 'package:news_app/View/Widgets/indicators.dart';
-import 'package:news_app/View/Widgets/news_card_widget.dart';
+import 'package:news_app/View/Views/top_headline_view.dart';
 import 'package:news_app/View/Widgets/snack_bars.dart';
+import 'package:news_app/ViewModel/Providers/connection_provider.dart';
 import 'package:news_app/ViewModel/ViewModels/home_view_model.dart';
+import 'package:provider/provider.dart';
 
 import 'account_view.dart';
 
@@ -39,28 +38,29 @@ class _HomeScreenState extends State<HomeScreen>
   bool isLoading = false;
   bool loadMore = false;
   bool hadError = false;
-  final List<Map<String, dynamic>> _tabs = [
-    {
-      'label': 'Home',
-      'icon': Icons.home_outlined,
-      'active': Icons.home,
-    },
-    {
-      'label': 'Business',
-      'icon': Icons.business_center_outlined,
-      'active': Icons.business_center,
-    },
-    {
-      'label': 'Sports',
-      'icon': Icons.sports_basketball_outlined,
-      'active': Icons.sports_basketball,
-    },
-    {
-      'label': 'Politics',
-      'icon': Icons.policy_outlined,
-      'active': Icons.policy,
-    },
-  ];
+  ConnectionProvider? _connectionProvider;
+  // final List<Map<String, dynamic>> _tabs = [
+  //   {
+  //     'label': 'Home',
+  //     'icon': Icons.home_outlined,
+  //     'active': Icons.home,
+  //   },
+  //   {
+  //     'label': 'Business',
+  //     'icon': Icons.business_center_outlined,
+  //     'active': Icons.business_center,
+  //   },
+  //   {
+  //     'label': 'Sports',
+  //     'icon': Icons.sports_basketball_outlined,
+  //     'active': Icons.sports_basketball,
+  //   },
+  //   {
+  //     'label': 'Politics',
+  //     'icon': Icons.policy_outlined,
+  //     'active': Icons.policy,
+  //   },
+  // ];
 
   List<int> _tabStack = [];
 
@@ -71,32 +71,35 @@ class _HomeScreenState extends State<HomeScreen>
   final String _country = 'eg';
   final List<String> _categories = ['business', 'politics', 'sports'];
   //final String _category = 'business';
-  ScrollController? newsListController = ScrollController();
+  //ScrollController? newsListController = ScrollController();
   AnimationController? slideTransitionController;
 
   // ignore: cancel_subscriptions
   late final StreamSubscription<ConnectivityResult>? connectivitySubscribtion;
   ConnectivityResult? connectivityCurrentState;
 
+  List<Widget> _pages = const [
+    TopHeadLinePage(),
+    TopHeadLinePage(),
+    TopHeadLinePage(),
+    TopHeadLinePage()
+  ];
+
   @override
   void initState() {
-    newsListController!.addListener(_listener);
-    slideTransitionController = AnimationController(
-      vsync: this,
-      duration: const Duration(
-        milliseconds: 300,
-      ),
-    );
+    //newsListController!.addListener(_listener);
+    // slideTransitionController = AnimationController(
+    //   vsync: this,
+    //   duration: const Duration(
+    //     milliseconds: 300,
+    //   ),
+    // );
     _checkConnectivity();
     connectivitySubscribtion =
         Connectivity().onConnectivityChanged.listen((connectivity) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      _connectionProvider!.checkConectivity();
       if (connectivity != ConnectivityResult.none) {
-        if (news!.isNotEmpty)
-          loadMoreNews();
-        else
-          loadNews();
-
         if (connectivityCurrentState != connectivity) {
           ScaffoldMessenger.of(context).showSnackBar(
             CustomSnackBar(
@@ -113,6 +116,11 @@ class _HomeScreenState extends State<HomeScreen>
             //   duration: const Duration(seconds: 2),
             // ),
           );
+
+          // if (news!.isNotEmpty)
+          //   loadMoreNews();
+          // else
+          //   loadNews();
         }
       } else {
         if (loadMore || isLoading)
@@ -142,6 +150,8 @@ class _HomeScreenState extends State<HomeScreen>
     });
 
     print('init');
+    WidgetsBinding.instance!
+        .addPostFrameCallback((_) => _connectionProvider!.checkConectivity());
     //loadNews();
     super.initState();
   }
@@ -152,26 +162,21 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   void dispose() {
-    newsListController!.removeListener(_listener);
-    newsListController!.dispose();
+    //newsListController!.removeListener(_listener);
+    //newsListController!.dispose();
     slideTransitionController!.dispose();
     connectivitySubscribtion!.cancel();
     super.dispose();
   }
 
-  void _listener() {
-    if (newsListController!.position.userScrollDirection ==
-        ScrollDirection.reverse) {
-      if (!bottomCollapse) setState(() => bottomCollapse = true);
-    } else if (bottomCollapse) setState(() => bottomCollapse = false);
-
-    if (newsListController!.position.pixels >
-        newsListController!.position.minScrollExtent / 2) {
-      if (homeViewModel.hasMore && !isLoading && !loading) {
-        if (!loadMore) loadMoreNews();
-      }
-    }
-  }
+  // void _listener() {
+  //   if (newsListController!.position.pixels >
+  //       newsListController!.position.minScrollExtent / 2) {
+  //     if (homeViewModel.hasMore && !isLoading && !loading) {
+  //       if (!loadMore) loadMoreNews();
+  //     }
+  //   }
+  // }
 
   void loadNews() async {
     if (!isLoading) setState(() => isLoading = true);
@@ -205,13 +210,16 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    _connectionProvider =
+        Provider.of<ConnectionProvider>(context, listen: true);
     return WillPopScope(
       onWillPop: () async {
-        if (newsListController!.position.pixels >
-                newsListController!.position.minScrollExtent &&
-            !_scaffoldKey.currentState!.isDrawerOpen)
-          return await showRefresh();
-        else if (_tabStack.isNotEmpty) {
+        // if (newsListController!.position.pixels >
+        //         newsListController!.position.minScrollExtent &&
+        //     !_scaffoldKey.currentState!.isDrawerOpen)
+        //   return await showRefresh();
+        // else
+        if (_tabStack.isNotEmpty) {
           setState(() {
             _currentTab = _tabStack[_tabStack.length - 1];
             _tabStack.removeAt(_tabStack.length - 1);
@@ -221,215 +229,217 @@ class _HomeScreenState extends State<HomeScreen>
           return true;
       },
       child: Scaffold(
-          key: _scaffoldKey,
-          //extendBody: true,
-          // extendBodyBehindAppBar: true,
-          drawer: Drawer(
-            child: Material(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              child: _buildDrawer(),
-            ),
+        key: _scaffoldKey,
+        //extendBody: true,
+        // extendBodyBehindAppBar: true,
+        drawer: Drawer(
+          child: Material(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            child: _buildDrawer(),
           ),
-          body: RefreshIndicator(
-            key: refreshKey,
-            onRefresh: () async {
-              loading = true;
-              await Future.delayed(const Duration(milliseconds: 200), () async {
-                news!.clear();
-                final int _categoriesIndex =
-                    Random().nextInt(_categories.length);
-                this.news = await homeViewModel.getTopHeadLineNews(
-                    TopHeadLineNewsApi(),
-                    news!.isNotEmpty ? news!.indexOf(news!.last) + 1 : 0,
-                    _country,
-                    _categories[_categoriesIndex]);
-                loading = false;
-                setState(() {
-                  newsListController!
-                      .jumpTo(newsListController!.position.minScrollExtent);
-                });
-              });
-            },
-            color: Colors.red,
-            backgroundColor: Theme.of(context).backgroundColor,
-            edgeOffset: 160,
-            child: CustomScrollView(
-              //primary: false,
-              physics: news!.isNotEmpty
-                  ? const BouncingScrollPhysics()
-                  : const NeverScrollableScrollPhysics(),
-              controller: newsListController,
-              slivers: [
-                buildSliverAppBar(),
-                SliverToBoxAdapter(
-                  child: _buildBody(),
-                )
-              ],
-            ),
-          ),
-          //   NestedScrollView(
-          // physics: NeverScrollableScrollPhysics(),
-          // controller: newsListController,
-          // headerSliverBuilder: (context, i) => [
-          //   buildSliverAppBar(),
-          // ],
-          // body: buildBody(),
-          // ),
-          bottomNavigationBar: CollapsibleBottomNavigationBar(
-            controller: newsListController!,
-            bottomNavigationBar: BottomNavigationBar(
-              unselectedItemColor: Theme.of(context)
-                  .textTheme
-                  .headline4!
-                  .color!
-                  .withOpacity(0.4),
-              selectedItemColor: Colors.red,
-              currentIndex: _currentTab,
-              type: BottomNavigationBarType.fixed,
-              onTap: (index) {
-                if (_currentTab != index) {
-                  setState(() {
-                    if (_tabStack.isEmpty ||
-                        (_tabStack.isNotEmpty && _currentTab != _tabStack.last))
-                      _tabStack.add(_currentTab);
-                    _currentTab = index;
-                  });
-                }
-              },
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-              items: _tabs
-                  .map((e) => BottomNavigationBarItem(
-                        icon: Icon(e['icon']),
-                        activeIcon: Icon(e['active']),
-                        label: e['label'],
-                      ))
-                  .toList(),
-            ),
-          )),
+        ),
+        // body: RefreshIndicator(
+        //   key: refreshKey,
+        //   onRefresh: () async {
+        //     loading = true;
+        //     await Future.delayed(const Duration(milliseconds: 200), () async {
+        //       final int _categoriesIndex =
+        //           Random().nextInt(_categories.length);
+        //       var _news = await homeViewModel.getTopHeadLineNews(
+        //           TopHeadLineNewsApi(),
+        //           news!.isNotEmpty ? news!.indexOf(news!.last) + 1 : 0,
+        //           _country,
+        //           _categories[_categoriesIndex]);
+        //       news!.clear();
+        //       this.news = _news;
+        //       loading = false;
+        //       setState(() {
+        //         newsListController!
+        //             .jumpTo(newsListController!.position.minScrollExtent);
+        //       });
+        //     });
+        //   },
+        //   color: Colors.red,
+        //   backgroundColor: Theme.of(context).backgroundColor,
+        //   edgeOffset: 160,
+        //   child: CustomScrollView(
+        //     //primary: false,
+        //     physics: news!.isNotEmpty
+        //         ? const BouncingScrollPhysics()
+        //         : const NeverScrollableScrollPhysics(),
+        //     controller: newsListController,
+        //     slivers: [
+        //       CustomSliverAppBar(
+        //         onRefresh: () => showRefresh(),
+        //       ),
+        //       SliverToBoxAdapter(
+        //         child: _buildBody(),
+        //       )
+        //     ],
+        //   ),
+        // ),
+        //   NestedScrollView(
+        // physics: NeverScrollableScrollPhysics(),
+        // controller: newsListController,
+        // headerSliverBuilder: (context, i) => [
+        //   buildSliverAppBar(),
+        // ],
+        // body: buildBody(),
+        // ),
+        body: _pages[_currentTab],
+        // bottomNavigationBar: CollapsibleBottomNavigationBar(
+        //   controller: newsListController!,
+        //   bottomNavigationBar: BottomNavigationBar(
+        //     unselectedItemColor:
+        //         Theme.of(context).textTheme.headline4!.color!.withOpacity(0.4),
+        //     selectedItemColor: Colors.red,
+        //     currentIndex: _currentTab,
+        //     type: BottomNavigationBarType.fixed,
+        //     onTap: (index) {
+        //       if (_currentTab != index) {
+        //         setState(() {
+        //           if (_tabStack.isEmpty ||
+        //               (_tabStack.isNotEmpty && _currentTab != _tabStack.last))
+        //             _tabStack.add(_currentTab);
+        //           _currentTab = index;
+        //         });
+        //       }
+        //     },
+        //     backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        //     items: _tabs
+        //         .map((e) => BottomNavigationBarItem(
+        //               icon: Icon(e['icon']),
+        //               activeIcon: Icon(e['active']),
+        //               label: e['label'],
+        //             ))
+        //         .toList(),
+        //   ),
+        // ),
+      ),
     );
   }
 
-  Widget buildSliverAppBar() {
-    // Animation<Offset> anim = Tween(begin: Offset(0, 1), end: Offset.zero)
-    //     .animate(CurvedAnimation(
-    //         parent: slideTransitionController!, curve: Curves.easeInOut));
-    final Tween<Offset> transitionTween =
-        Tween(begin: const Offset(0, 1), end: Offset.zero);
-    return SliverAppBar(
-      title: const Text('News'),
-      centerTitle: true,
-      floating: true,
-      pinned: true,
-      snap: true,
-      //primary: false,
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(74),
-        child: GestureDetector(
-          onTap: () {
-            //slideTransitionController!.forward();
-            Navigator.of(context).push(
-              PageRouteBuilder(
-                pageBuilder: (context, _, a) {
-                  return const SearchScreen(
-                      //controller: slideTransitionController!,
-                      );
-                },
-                transitionsBuilder: (context, animation, a, child) {
-                  return SlideTransition(
-                    child: child,
-                    position: transitionTween.animate(CurvedAnimation(
-                        parent: animation, curve: Curves.easeInOut)),
-                  );
-                },
-                transitionDuration: slideTransitionController!.duration!,
-                reverseTransitionDuration: slideTransitionController!.duration!,
-              ),
-              //MaterialPageRoute(builder: (context) => SearchScreen()),
-            );
-          },
-          child: Container(
-            color: Colors.transparent,
-            padding: const EdgeInsets.all(8),
-            child: Card(
-              color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.4),
-              child: Container(
-                color: Colors.transparent,
-                width: double.infinity,
-                height: 50,
-                padding: const EdgeInsets.all(15),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.max,
-                  children: [
-                    Icon(
-                      Icons.search,
-                      color:
-                          Theme.of(context).iconTheme.color!.withOpacity(0.3),
-                    ),
-                    const SizedBox(
-                      width: 15,
-                    ),
-                    Text(
-                      'Search',
-                      style: TextStyle(
-                        color: Theme.of(context)
-                            .textTheme
-                            .headline4!
-                            .color!
-                            .withOpacity(0.3),
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
-            ),
-          ),
-        ),
-      ),
-      actions: [
-        Transform.scale(
-          scale: 0.75,
-          child: IconButton(
-            onPressed: () => showRefresh(),
-            icon: const Icon(
-              Icons.refresh,
-              size: 35,
-            ),
-          ),
-        ),
-        const SizedBox(
-          width: 15,
-        ),
-        GestureDetector(
-          onTap: () => navigateTo(const AccountScreen()),
-          child: CircleAvatar(
-            radius: 16,
-            child: FaIcon(
-              FontAwesomeIcons.userAlt,
-              size: 18,
-              color: Theme.of(context).primaryColor,
-            ),
-            // child: Icon(
-            //   Icons.account_circle_outlined,
-            //   color: Theme.of(context).primaryColor,
-            // ),
-            backgroundColor: Colors.white.withOpacity(0.4),
-          ),
-        ),
-        const SizedBox(
-          width: 15,
-        ),
-        // Icon(Platform.isAndroid ? Icons.android : Icons.phone_iphone),
-        // SizedBox(
-        //   width: 10,
-        // )
-      ],
-    );
-  }
+  // Widget buildSliverAppBar() {
+  //   // Animation<Offset> anim = Tween(begin: Offset(0, 1), end: Offset.zero)
+  //   //     .animate(CurvedAnimation(
+  //   //         parent: slideTransitionController!, curve: Curves.easeInOut));
+  //   final Tween<Offset> transitionTween =
+  //       Tween(begin: const Offset(0, 1), end: Offset.zero);
+  //   return SliverAppBar(
+  //     title: const Text('News'),
+  //     centerTitle: true,
+  //     floating: true,
+  //     pinned: true,
+  //     snap: true,
+  //     //primary: false,
+  //     bottom: PreferredSize(
+  //       preferredSize: const Size.fromHeight(74),
+  //       child: GestureDetector(
+  //         onTap: () {
+  //           //slideTransitionController!.forward();
+  //           Navigator.of(context).push(
+  //             PageRouteBuilder(
+  //               pageBuilder: (context, _, a) {
+  //                 return const SearchScreen(
+  //                     //controller: slideTransitionController!,
+  //                     );
+  //               },
+  //               transitionsBuilder: (context, animation, a, child) {
+  //                 return SlideTransition(
+  //                   child: child,
+  //                   position: transitionTween.animate(CurvedAnimation(
+  //                       parent: animation, curve: Curves.easeInOut)),
+  //                 );
+  //               },
+  //               transitionDuration: slideTransitionController!.duration!,
+  //               reverseTransitionDuration: slideTransitionController!.duration!,
+  //             ),
+  //             //MaterialPageRoute(builder: (context) => SearchScreen()),
+  //           );
+  //         },
+  //         child: Container(
+  //           color: Colors.transparent,
+  //           padding: const EdgeInsets.all(8),
+  //           child: Card(
+  //             color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.4),
+  //             child: Container(
+  //               color: Colors.transparent,
+  //               width: double.infinity,
+  //               height: 50,
+  //               padding: const EdgeInsets.all(15),
+  //               child: Row(
+  //                 crossAxisAlignment: CrossAxisAlignment.center,
+  //                 mainAxisSize: MainAxisSize.max,
+  //                 children: [
+  //                   Icon(
+  //                     Icons.search,
+  //                     color:
+  //                         Theme.of(context).iconTheme.color!.withOpacity(0.3),
+  //                   ),
+  //                   const SizedBox(
+  //                     width: 15,
+  //                   ),
+  //                   Text(
+  //                     'Search',
+  //                     style: TextStyle(
+  //                       color: Theme.of(context)
+  //                           .textTheme
+  //                           .headline4!
+  //                           .color!
+  //                           .withOpacity(0.3),
+  //                       fontSize: 16,
+  //                       fontWeight: FontWeight.bold,
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //             shape: RoundedRectangleBorder(
+  //                 borderRadius: BorderRadius.circular(20)),
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //     actions: [
+  //       Transform.scale(
+  //         scale: 0.75,
+  //         child: IconButton(
+  //           onPressed: () => showRefresh(),
+  //           icon: const Icon(
+  //             Icons.refresh,
+  //             size: 35,
+  //           ),
+  //         ),
+  //       ),
+  //       const SizedBox(
+  //         width: 15,
+  //       ),
+  //       GestureDetector(
+  //         onTap: () => navigateTo(const AccountScreen()),
+  //         child: CircleAvatar(
+  //           radius: 16,
+  //           child: FaIcon(
+  //             FontAwesomeIcons.userAlt,
+  //             size: 18,
+  //             color: Theme.of(context).primaryColor,
+  //           ),
+  //           // child: Icon(
+  //           //   Icons.account_circle_outlined,
+  //           //   color: Theme.of(context).primaryColor,
+  //           // ),
+  //           backgroundColor: Colors.white.withOpacity(0.4),
+  //         ),
+  //       ),
+  //       const SizedBox(
+  //         width: 15,
+  //       ),
+  //       // Icon(Platform.isAndroid ? Icons.android : Icons.phone_iphone),
+  //       // SizedBox(
+  //       //   width: 10,
+  //       // )
+  //     ],
+  //   );
+  // }
 
   // Widget buildBody() => RefreshIndicator(
   //       key: refreshKey,
@@ -513,10 +523,11 @@ class _HomeScreenState extends State<HomeScreen>
   //             ),
   //     );
 
-  Widget _buildBody() => GestureDetector(
-        onTap: () => SystemChannels.textInput.invokeMethod('TextInput.hide'),
-        child: _buildBodyContent(),
-      );
+  // Widget _buildBody() => GestureDetector(
+  //       onTap: () => SystemChannels.textInput.invokeMethod('TextInput.hide'),
+  //       child: _buildBodyContent(),
+  //     );
+
   // Widget buildAlternateBody() => news!.isEmpty && !isLoading
   //     ? GestureDetector(
   //         onTap: () {
@@ -627,28 +638,28 @@ class _HomeScreenState extends State<HomeScreen>
   //             ),
   //           );
 
-  Widget _buildBodyContent() =>
-      news!.isEmpty && connectivityCurrentState == ConnectivityResult.none
-          ? Center(
-              child: Container(
-                color: Colors.transparent,
-                width: MediaQuery.of(context).size.width,
-                height: MediaQuery.of(context).size.height * 0.75,
-                child: _buildConnectionError(),
-              ),
-            )
-          : news!.isEmpty && isLoading
-              ? _buildLoading()
-              : news!.isNotEmpty && !isLoading && !homeViewModel.hasError
-                  ? _buildNewsList()
-                  : Center(
-                      child: Container(
-                        color: Colors.transparent,
-                        width: MediaQuery.of(context).size.width,
-                        height: MediaQuery.of(context).size.height * 0.75,
-                        child: _buildDataError(),
-                      ),
-                    );
+  // Widget _buildBodyContent() =>
+  //     news!.isEmpty && connectivityCurrentState == ConnectivityResult.none
+  //         ? Center(
+  //             child: Container(
+  //               color: Colors.transparent,
+  //               width: MediaQuery.of(context).size.width,
+  //               height: MediaQuery.of(context).size.height * 0.75,
+  //               child: _buildConnectionError(),
+  //             ),
+  //           )
+  //         : news!.isEmpty && isLoading
+  //             ? _buildLoading()
+  //             : news!.isNotEmpty && !isLoading && !homeViewModel.hasError
+  //                 ? _buildNewsList()
+  //                 : Center(
+  //                     child: Container(
+  //                       color: Colors.transparent,
+  //                       width: MediaQuery.of(context).size.width,
+  //                       height: MediaQuery.of(context).size.height * 0.75,
+  //                       child: _buildDataError(),
+  //                     ),
+  //                   );
 
   // Widget _buildNewsList() => Column(
   //       children: [
@@ -727,117 +738,140 @@ class _HomeScreenState extends State<HomeScreen>
   //                     : const SizedBox(),
   //       ],
   //     );
-  Widget _buildNewsList() => ListView.builder(
-        physics: NeverScrollableScrollPhysics(),
-        shrinkWrap: true,
-        itemCount: news!.length + 1,
-        itemBuilder: (context, index) => index < news!.length
-            ? NewsCardWidget(
-                id: '$index',
-                model: news![index],
-              )
-            : loadMore && !homeViewModel.hasError
-                ? const SizedBox(
-                    height: 50,
-                    child: const CustomCircularIndicator(
-                      color: Colors.red,
-                    ),
-                  )
-                : !homeViewModel.hasError &&
-                        connectivityCurrentState == ConnectivityResult.none
-                    ? _buildListEndError('Connection')
-                    : homeViewModel.hasError
-                        ? _buildListEndError('Data')
-                        : const SizedBox(),
-      );
-  Widget _buildLoading() => Center(
-        child: Container(
-          color: Colors.transparent,
-          width: MediaQuery.of(context).size.width,
-          height: MediaQuery.of(context).size.height * 0.75,
-          child: const CustomCircularIndicator(
-            color: Colors.red,
-          ),
-        ),
-      );
 
-  Widget _buildConnectionError() => Column(
-        mainAxisSize: MainAxisSize.max,
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.wifi_off_rounded,
-            size: 115,
-            color: Theme.of(context).iconTheme.color!.withOpacity(0.3),
-          ),
-          Text(
-            'Check Your Internet Connection',
-            style: TextStyle(
-              fontSize: 20,
-              color: Theme.of(context)
-                  .textTheme
-                  .headline4!
-                  .color!
-                  .withOpacity(0.3),
-            ),
-          ),
-        ],
-      );
+  //Navigation Pages
+  // Widget _buildNewsList() {
+  //   switch (_currentTab) {
+  //     case 0:
+  //       return _buildHome();
+  //     default:
+  //       return _buildBusiness();
+  //   }
+  // }
 
-  Widget _buildDataError() => Column(
-        mainAxisSize: MainAxisSize.max,
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.warning_amber_rounded,
-            size: 115,
-            color: Theme.of(context).iconTheme.color!.withOpacity(0.3),
-          ),
-          Text(
-            'Somthing Went Wrong',
-            style: TextStyle(
-              fontSize: 20,
-              color: Theme.of(context)
-                  .textTheme
-                  .headline4!
-                  .color!
-                  .withOpacity(0.3),
-            ),
-          ),
-        ],
-      );
+  //Top-Headline Page
+  // Widget _buildHome() => ListView.builder(
+  //       key: PageStorageKey('HomeList'),
+  //       physics: NeverScrollableScrollPhysics(),
+  //       shrinkWrap: true,
+  //       itemCount: news!.length + 1,
+  //       itemBuilder: (context, index) => index < news!.length
+  //           ? NewsCardWidget(
+  //               id: '$index',
+  //               model: news![index],
+  //             )
+  //           : loadMore && !homeViewModel.hasError
+  //               ? const SizedBox(
+  //                   height: 50,
+  //                   child: const CustomCircularIndicator(
+  //                     color: Colors.red,
+  //                   ),
+  //                 )
+  //               : !homeViewModel.hasError &&
+  //                       connectivityCurrentState == ConnectivityResult.none
+  //                   ? _buildListEndError('Connection')
+  //                   : homeViewModel.hasError
+  //                       ? _buildListEndError('Data')
+  //                       : const SizedBox(),
+  //     );
 
-  Widget _buildListEndError(String errorType) => Center(
-        child: Column(
-          children: [
-            Icon(
-              errorType == 'Connection'
-                  ? Icons.wifi_off_rounded
-                  : Icons.warning_amber_rounded,
-              size: 50,
-              color: Theme.of(context).iconTheme.color!.withOpacity(0.3),
-            ),
-            Text(
-              errorType == 'Connection'
-                  ? 'Check Your Internet Connection'
-                  : 'Somthing Went Wrong',
-              style: TextStyle(
-                fontSize: 18,
-                color: Theme.of(context)
-                    .textTheme
-                    .headline4!
-                    .color!
-                    .withOpacity(0.3),
-              ),
-            ),
-            const SizedBox(
-              height: 15,
-            ),
-          ],
-        ),
-      );
+  // //Business Page
+  // Widget _buildBusiness() => CustomCircularIndicator(
+  //       color: Colors.red,
+  //     );
+
+  // //Loading
+  // Widget _buildLoading() => Center(
+  //       child: Container(
+  //         color: Colors.transparent,
+  //         width: MediaQuery.of(context).size.width,
+  //         height: MediaQuery.of(context).size.height * 0.75,
+  //         child: const CustomCircularIndicator(
+  //           color: Colors.red,
+  //         ),
+  //       ),
+  //     );
+
+  // //Connection Error
+  // Widget _buildConnectionError() => Column(
+  //       mainAxisSize: MainAxisSize.max,
+  //       mainAxisAlignment: MainAxisAlignment.center,
+  //       crossAxisAlignment: CrossAxisAlignment.center,
+  //       children: [
+  //         Icon(
+  //           Icons.wifi_off_rounded,
+  //           size: 115,
+  //           color: Theme.of(context).iconTheme.color!.withOpacity(0.3),
+  //         ),
+  //         Text(
+  //           'Check Your Internet Connection',
+  //           style: TextStyle(
+  //             fontSize: 20,
+  //             color: Theme.of(context)
+  //                 .textTheme
+  //                 .headline4!
+  //                 .color!
+  //                 .withOpacity(0.3),
+  //           ),
+  //         ),
+  //       ],
+  //     );
+
+  // //Data Fetch Error
+  // Widget _buildDataError() => Column(
+  //       mainAxisSize: MainAxisSize.max,
+  //       mainAxisAlignment: MainAxisAlignment.center,
+  //       crossAxisAlignment: CrossAxisAlignment.center,
+  //       children: [
+  //         Icon(
+  //           Icons.warning_amber_rounded,
+  //           size: 115,
+  //           color: Theme.of(context).iconTheme.color!.withOpacity(0.3),
+  //         ),
+  //         Text(
+  //           'Somthing Went Wrong',
+  //           style: TextStyle(
+  //             fontSize: 20,
+  //             color: Theme.of(context)
+  //                 .textTheme
+  //                 .headline4!
+  //                 .color!
+  //                 .withOpacity(0.3),
+  //           ),
+  //         ),
+  //       ],
+  //     );
+
+  // //List End Errors
+  // Widget _buildListEndError(String errorType) => Center(
+  //       child: Column(
+  //         children: [
+  //           Icon(
+  //             errorType == 'Connection'
+  //                 ? Icons.wifi_off_rounded
+  //                 : Icons.warning_amber_rounded,
+  //             size: 50,
+  //             color: Theme.of(context).iconTheme.color!.withOpacity(0.3),
+  //           ),
+  //           Text(
+  //             errorType == 'Connection'
+  //                 ? 'Check Your Internet Connection'
+  //                 : 'Somthing Went Wrong',
+  //             style: TextStyle(
+  //               fontSize: 18,
+  //               color: Theme.of(context)
+  //                   .textTheme
+  //                   .headline4!
+  //                   .color!
+  //                   .withOpacity(0.3),
+  //             ),
+  //           ),
+  //           const SizedBox(
+  //             height: 15,
+  //           ),
+  //         ],
+  //       ),
+  //     );
 
   Widget _buildeListTile(
       {String? title,
@@ -1018,21 +1052,21 @@ class _HomeScreenState extends State<HomeScreen>
   void navigateTo(Widget screen) => Navigator.of(context)
       .push(MaterialPageRoute(builder: (context) => screen));
 
-  Future<bool> showRefresh() async {
-    //homeViewModel.hasMore = true;
-    if (!loading) {
-      loading = true;
-      setState(() {
-        loadMore = false;
-        hadError = false;
-        bottomCollapse = false;
-      });
-      newsListController!.animateTo(
-          newsListController!.position.minScrollExtent,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInOut);
-      refreshKey.currentState!.show();
-    }
-    return !loading;
-  }
+  // Future<bool> showRefresh() async {
+  //   //homeViewModel.hasMore = true;
+  //   if (!loading) {
+  //     loading = true;
+  //     setState(() {
+  //       loadMore = false;
+  //       hadError = false;
+  //       bottomCollapse = false;
+  //     });
+  //     newsListController!.animateTo(
+  //         newsListController!.position.minScrollExtent,
+  //         duration: const Duration(milliseconds: 500),
+  //         curve: Curves.easeInOut);
+  //     refreshKey.currentState!.show();
+  //   }
+  //   return !loading;
+  // }
 }

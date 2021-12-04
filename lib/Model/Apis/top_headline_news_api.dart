@@ -14,6 +14,7 @@ class TopHeadLineNewsApi extends TopHeadLineNewsRepository {
     try {
       final http.Response _response = await http.get(Uri.parse(url));
       print('from Api: $_response');
+      print(_response.statusCode);
       if (_response.statusCode != 200) return [];
       var _responseBody = jsonDecode(_response.body);
       _topHeadLine = _responseBody["articles"];

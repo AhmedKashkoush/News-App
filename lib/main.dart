@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:news_app/View/Themes/themes.dart';
+import 'package:news_app/ViewModel/Providers/connection_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -33,13 +34,16 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Provider.of<ThemeProvider>(context);
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'News',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: AppTheme.getThemeMode(),
-      home: const HomeScreen(title: 'News'),
+    return ChangeNotifierProvider(
+      create: (BuildContext context) => ConnectionProvider(),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'News',
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: AppTheme.getThemeMode(),
+        home: const HomeScreen(title: 'News'),
+      ),
     );
   }
 }
