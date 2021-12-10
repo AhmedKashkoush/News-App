@@ -4,11 +4,17 @@ import 'package:news_app/Preferences/app_routing.dart';
 import 'package:news_app/View/Views/account_view.dart';
 import 'package:news_app/View/Views/search_view.dart';
 
+// ignore: must_be_immutable
 class CustomSliverAppBar extends StatefulWidget {
   final VoidCallback onRefresh;
+  final Widget currentPage;
+
+  String search;
   CustomSliverAppBar({
     Key? key,
     required this.onRefresh,
+    required this.currentPage,
+    required this.search,
   }) : super(key: key);
 
   @override
@@ -16,6 +22,11 @@ class CustomSliverAppBar extends StatefulWidget {
 }
 
 class _CustomSliverAppBarState extends State<CustomSliverAppBar> {
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final Tween<Offset> transitionTween =
@@ -78,7 +89,7 @@ class _CustomSliverAppBarState extends State<CustomSliverAppBar> {
                       width: 15,
                     ),
                     Text(
-                      'Search',
+                      'Search', //widget.search,
                       style: TextStyle(
                         color: Theme.of(context)
                             .textTheme
@@ -113,7 +124,8 @@ class _CustomSliverAppBarState extends State<CustomSliverAppBar> {
           width: 15,
         ),
         GestureDetector(
-          onTap: () => AppRoute.navigateTo(context, const AccountScreen()),
+          onTap: () => AppRoute.navigateTo(
+              context, widget.currentPage, const AccountScreen()),
           child: CircleAvatar(
             radius: 16,
             child: FaIcon(

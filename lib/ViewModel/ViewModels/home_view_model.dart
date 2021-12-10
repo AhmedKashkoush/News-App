@@ -11,15 +11,18 @@ class HomeViewModel {
       String country,
       String _category) async {
     print('from ViewModel');
-    if (loadState != 'Loaded') loadState = 'Loading';
+    loadState = 'Loading';
     final List _list = await newsRepository.getTopHeadLineNews(
         country: country, category: _category);
-    if (loadState != 'Loaded')
-      loadState = _list.isEmpty
-          ? 'Error'
-          : index + 6 < _list.length
-              ? 'Ok'
-              : 'Loaded';
+
+    if (_list.isNotEmpty) {
+      if (index + 6 < _list.length)
+        loadState = 'Ok';
+      else
+        loadState = 'Loaded';
+    } else {
+      loadState = 'Error';
+    }
     hasMore = index + 6 < _list.length;
     hasError = hasMore && _list.isEmpty;
     return _list.isNotEmpty

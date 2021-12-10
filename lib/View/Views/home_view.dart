@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:connectivity/connectivity.dart';
 import 'package:flutter/cupertino.dart';
@@ -8,8 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:news_app/Model/Apis/top_headline_news_api.dart';
-import 'package:news_app/Model/Models/news_model.dart';
+import 'package:news_app/Preferences/app_routing.dart';
 import 'package:news_app/View/Views/settings_view.dart';
 import 'package:news_app/View/Views/top_headline_view.dart';
 import 'package:news_app/View/Widgets/snack_bars.dart';
@@ -21,7 +19,9 @@ import 'account_view.dart';
 
 class HomeScreen extends StatefulWidget {
   final String? title;
-  const HomeScreen({Key? key, this.title}) : super(key: key);
+  final Widget currentPage;
+  const HomeScreen({Key? key, this.title, required this.currentPage})
+      : super(key: key);
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
@@ -30,7 +30,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   HomeViewModel homeViewModel = HomeViewModel();
-  List<NewsModel>? news = [];
+  //List<NewsModel>? news = [];
   GlobalKey<RefreshIndicatorState> refreshKey =
       GlobalKey<RefreshIndicatorState>();
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -68,8 +68,6 @@ class _HomeScreenState extends State<HomeScreen>
 
   bool bottomCollapse = false;
 
-  final String _country = 'eg';
-  final List<String> _categories = ['business', 'politics', 'sports'];
   //final String _category = 'business';
   //ScrollController? newsListController = ScrollController();
   AnimationController? slideTransitionController;
@@ -78,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen>
   late final StreamSubscription<ConnectivityResult>? connectivitySubscribtion;
   ConnectivityResult? connectivityCurrentState;
 
-  List<Widget> _pages = const [
+  List<Widget>? _pages = const [
     TopHeadLinePage(),
     TopHeadLinePage(),
     TopHeadLinePage(),
@@ -123,11 +121,11 @@ class _HomeScreenState extends State<HomeScreen>
           //   loadNews();
         }
       } else {
-        if (loadMore || isLoading)
-          setState(() {
-            loadMore = false;
-            isLoading = false;
-          });
+        // if (loadMore || isLoading)
+        //   setState(() {
+        //     loadMore = false;
+        //     isLoading = false;
+        //   });
         if (connectivityCurrentState != connectivity) {
           ScaffoldMessenger.of(context).showSnackBar(
             CustomSnackBar(
@@ -164,7 +162,7 @@ class _HomeScreenState extends State<HomeScreen>
   void dispose() {
     //newsListController!.removeListener(_listener);
     //newsListController!.dispose();
-    slideTransitionController!.dispose();
+    //slideTransitionController!.dispose();
     connectivitySubscribtion!.cancel();
     super.dispose();
   }
@@ -178,35 +176,35 @@ class _HomeScreenState extends State<HomeScreen>
   //   }
   // }
 
-  void loadNews() async {
-    if (!isLoading) setState(() => isLoading = true);
-    final int _categoriesIndex = Random().nextInt(_categories.length);
-    this.news = await homeViewModel.getTopHeadLineNews(
-        TopHeadLineNewsApi(),
-        news!.isNotEmpty ? news!.indexOf(news!.last) + 1 : 0,
-        _country,
-        _categories[_categoriesIndex]);
-    if (isLoading) setState(() => isLoading = false);
-  }
+  // void loadNews() async {
+  //   if (!isLoading) setState(() => isLoading = true);
+  //   final int _categoriesIndex = Random().nextInt(_categories.length);
+  //   this.news = await homeViewModel.getTopHeadLineNews(
+  //       TopHeadLineNewsApi(),
+  //       news!.isNotEmpty ? news!.indexOf(news!.last) + 1 : 0,
+  //       _country,
+  //       _categories[_categoriesIndex]);
+  //   if (isLoading) setState(() => isLoading = false);
+  // }
 
-  void loadMoreNews() async {
-    if (!loadMore) setState(() => loadMore = true);
-    final int _categoriesIndex = Random().nextInt(_categories.length);
-    List<NewsModel>? loaded = await homeViewModel.getTopHeadLineNews(
-        TopHeadLineNewsApi(),
-        news!.isNotEmpty ? news!.indexOf(news!.last) + 1 : 0,
-        _country,
-        _categories[_categoriesIndex]);
-    if (!loading) {
-      loaded!.forEach((element) {
-        this.news!.add(element);
-      });
-    }
-    if (loadMore) setState(() => loadMore = false);
-    // if (loaded.isEmpty) {
-    //   if (!hadError) setState(() => hadError = true);
-    // } else if (hadError) setState(() => hadError = false);
-  }
+  // void loadMoreNews() async {
+  //   if (!loadMore) setState(() => loadMore = true);
+  //   final int _categoriesIndex = Random().nextInt(_categories.length);
+  //   List<NewsModel>? loaded = await homeViewModel.getTopHeadLineNews(
+  //       TopHeadLineNewsApi(),
+  //       news!.isNotEmpty ? news!.indexOf(news!.last) + 1 : 0,
+  //       _country,
+  //       _categories[_categoriesIndex]);
+  //   if (!loading) {
+  //     loaded!.forEach((element) {
+  //       this.news!.add(element);
+  //     });
+  //   }
+  //   if (loadMore) setState(() => loadMore = false);
+  //   // if (loaded.isEmpty) {
+  //   //   if (!hadError) setState(() => hadError = true);
+  //   // } else if (hadError) setState(() => hadError = false);
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -286,7 +284,7 @@ class _HomeScreenState extends State<HomeScreen>
         // ],
         // body: buildBody(),
         // ),
-        body: _pages[_currentTab],
+        body: _pages![_currentTab],
         // bottomNavigationBar: CollapsibleBottomNavigationBar(
         //   controller: newsListController!,
         //   bottomNavigationBar: BottomNavigationBar(
@@ -911,7 +909,8 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildDrawer() {
     List<Widget> _drawerList = [
       GestureDetector(
-        onTap: () => popDrawerAndNavigateTo(const AccountScreen()),
+        onTap: () => AppRoute.popAndNavigateTo(
+            context, widget.currentPage, const AccountScreen()),
         child: ListTile(
           leading: CircleAvatar(
             backgroundColor: Colors.grey[700]!.withOpacity(0.4),
@@ -943,7 +942,8 @@ class _HomeScreenState extends State<HomeScreen>
       _buildeListTile(
         title: 'Account',
         icon: Icons.account_circle_outlined,
-        onTap: () => popDrawerAndNavigateTo(const AccountScreen()),
+        onTap: () => AppRoute.popAndNavigateTo(
+            context, widget.currentPage, const AccountScreen()),
       ),
       _buildeListTile(
         title: 'Notifications',
@@ -960,7 +960,8 @@ class _HomeScreenState extends State<HomeScreen>
           title: 'Settings',
           icon: Icons.settings_outlined,
           onTap: () {
-            popDrawerAndNavigateTo(const SettingsScreen());
+            AppRoute.popAndNavigateTo(
+                context, widget.currentPage, const SettingsScreen());
           }),
       _buildeListTile(
           title: 'About', icon: Icons.info_outline_rounded, onTap: () {}),

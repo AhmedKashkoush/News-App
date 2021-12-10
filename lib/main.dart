@@ -42,7 +42,10 @@ class MyApp extends StatelessWidget {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: AppTheme.getThemeMode(),
-        home: const HomeScreen(title: 'News'),
+        home: HomeScreen(
+          title: 'News',
+          currentPage: this,
+        ),
       ),
     );
   }

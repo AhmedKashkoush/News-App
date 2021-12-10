@@ -30,9 +30,9 @@ class _SeeMoreWidgetState extends State<SeeMoreWidget> {
               ? widget.textLength
               : widget.text!.length);
       //final int? _contentLines = '\n'.allMatches(widget.text!).length + 1;
-      _text = _isMore && _trimmedText!.length <= widget.text!.length
-          ? widget.text!
-          : '$_trimmedText...';
+      _text = !_isMore && _trimmedText!.length < widget.text!.length
+          ? '$_trimmedText...'
+          : widget.text!;
       // _overflow =
       //     _isMore && _lines == null ? TextOverflow.visible : widget.overflow;
       // _seeMoreShown = (!_isMore && _contentLines! > widget.linesCount!);

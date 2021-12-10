@@ -13,7 +13,9 @@ import 'package:news_app/ViewModel/ViewModels/home_view_model.dart';
 import 'package:provider/provider.dart';
 
 class TopHeadLinePage extends StatefulWidget {
-  const TopHeadLinePage({Key? key}) : super(key: key);
+  const TopHeadLinePage({
+    Key? key,
+  }) : super(key: key);
 
   @override
   _TopHeadLinePageState createState() => _TopHeadLinePageState();
@@ -50,14 +52,15 @@ class _TopHeadLinePageState extends State<TopHeadLinePage> {
   }
 
   void _listener() {
-    if (_topHeadlineViewModel.loadState != 'Loaded') {
-      if (_news!.isNotEmpty) {
-        if (_newsListController!.position.pixels >
-            _newsListController!.position.minScrollExtent / 2) {
-          loadMoreNews();
-        }
-      }
-    }
+    loadMoreNews();
+    // if (_topHeadlineViewModel.loadState != 'Loaded') {
+    //   if (_news!.isNotEmpty) {
+    //     if (_newsListController!.position.pixels >
+    //         _newsListController!.position.minScrollExtent / 2) {
+    //       loadMoreNews();
+    //     }
+    //   }
+    // }
   }
 
   void loadNews() async {
@@ -77,10 +80,12 @@ class _TopHeadLinePageState extends State<TopHeadLinePage> {
   void loadMoreNews() async {
     //if (!_loadMore) _loadMore = true;
     if (_newsListController!.position.pixels >
-        _newsListController!.position.minScrollExtent / 2) {
-      if (_topHeadlineViewModel.loadState != 'Loaded') {
-        if (_topHeadlineViewModel.loadState == 'Ok')
-          setState(() => _topHeadlineViewModel.loadState = 'Loading');
+        _newsListController!.position.maxScrollExtent -
+            MediaQuery.of(context).size.height * 0.75) {
+      if (_topHeadlineViewModel.hasMore &&
+          _topHeadlineViewModel.loadState != 'Loading') {
+        // if (_topHeadlineViewModel.loadState == 'Ok')
+        setState(() {});
 
         final int _categoriesIndex = Random().nextInt(_categories.length);
         List<NewsModel>? _loaded =
@@ -89,11 +94,11 @@ class _TopHeadLinePageState extends State<TopHeadLinePage> {
                 _news!.isNotEmpty ? _news!.indexOf(_news!.last) + 1 : 0,
                 _country,
                 _categories[_categoriesIndex]);
-        if (_topHeadlineViewModel.loadState != 'Loading') {
-          this._news!.addAll(_loaded!);
-        }
-        if (_topHeadlineViewModel.loadState == 'Loading')
-          setState(() => _topHeadlineViewModel.loadState = 'Ok');
+        //if (_topHeadlineViewModel.loadState != 'Loading') {
+        this._news!.addAll(_loaded!);
+        //}
+        //if (_topHeadlineViewModel.loadState == 'Loading')
+        setState(() {});
       }
     }
     //if (_loadMore) _loadMore = false;
@@ -110,14 +115,18 @@ class _TopHeadLinePageState extends State<TopHeadLinePage> {
             provider.connectionState != ConnectivityResult.none) {
           _isConnected = true;
           //_topHeadlineViewModel.loadState = 'Loading';
-          if (_news!.isEmpty) loadNews();
-          if (_news!.isNotEmpty && _topHeadlineViewModel.loadState != 'Loaded')
+          if (_news!.isEmpty)
+            loadNews();
+          else
             loadMoreNews();
+          // if (_news!.isNotEmpty && _topHeadlineViewModel.hasMore)
+          //   loadMoreNews();
         } else if (_isConnected &&
             provider.connectionState == ConnectivityResult.none)
           _isConnected = false;
         return RefreshIndicator(
           key: refreshKey,
+          triggerMode: RefreshIndicatorTriggerMode.anywhere,
           onRefresh: () async {
             await Future.delayed(const Duration(milliseconds: 200), onRefresh);
           },
@@ -126,6 +135,7 @@ class _TopHeadLinePageState extends State<TopHeadLinePage> {
           edgeOffset: 160,
           child: CustomScrollView(
             //primary: false,
+            key: PageStorageKey('TopHeadLine'),
             physics: _news!.isNotEmpty
                 ? const BouncingScrollPhysics()
                 : const NeverScrollableScrollPhysics(),
@@ -133,6 +143,8 @@ class _TopHeadLinePageState extends State<TopHeadLinePage> {
             slivers: [
               CustomSliverAppBar(
                 onRefresh: () => showRefresh(),
+                currentPage: widget,
+                search: _topHeadlineViewModel.loadState,
               ),
               SliverToBoxAdapter(
                 child: Column(
@@ -337,12 +349,14 @@ class _TopHeadLinePageState extends State<TopHeadLinePage> {
                       color: Colors.red,
                     ),
                   );
-                else if (_topHeadlineViewModel.loadState != 'Error')
+                else if (_topHeadlineViewModel.loadState == 'Error')
                   return _buildListEndError('Data');
-              } else
+              } else if (_topHeadlineViewModel.hasMore)
                 return _buildListEndError('Connection');
             }
-            return const SizedBox();
+            return _topHeadlineViewModel.hasMore
+                ? const SizedBox()
+                : _buildListEndError('Connection');
           }
         },
       );
@@ -444,7 +458,7 @@ class _TopHeadLinePageState extends State<TopHeadLinePage> {
 
   Future<bool> showRefresh() async {
     //homeViewModel.hasMore = true;
-    if (!_loading && _topHeadlineViewModel.loadState != 'Loading') {
+    if (!_loading) {
       _newsListController!.animateTo(
           _newsListController!.position.minScrollExtent,
           duration: const Duration(milliseconds: 500),
@@ -457,19 +471,19 @@ class _TopHeadLinePageState extends State<TopHeadLinePage> {
   Future onRefresh() async {
     final int _categoriesIndex = Random().nextInt(_categories.length);
     _loading = true;
+    //_topHeadlineViewModel.hasMore = false;
+    _news!.clear();
     var _newNews = await _topHeadlineViewModel.getTopHeadLineNews(
         TopHeadLineNewsApi(),
         _news!.isNotEmpty ? _news!.indexOf(_news!.last) + 1 : 0,
         _country,
         _categories[_categoriesIndex]);
-    _news!.clear();
-    this._news = _newNews;
-    if (this._news!.isNotEmpty)
-      setState(() => _topHeadlineViewModel.loadState = 'Loading');
-    _loading = false;
+    //_news!.clear();
     setState(() {
+      this._news = _newNews;
       _newsListController!
           .jumpTo(_newsListController!.position.minScrollExtent);
     });
+    _loading = false;
   }
 }

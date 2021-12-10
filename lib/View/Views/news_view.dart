@@ -110,226 +110,234 @@ class _NewsScreenState extends State<NewsScreen> {
               },
             ),
           ),
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
-                Container(
-                  //width: MediaQuery.of(context).size.width,
-                  height: 250,
-                  child: _buildImage(),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.model!.title!,
-                        overflow: TextOverflow.fade,
-                        style: TextStyle(
-                            color: Theme.of(context).textTheme.headline4!.color,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(
-                        height: 10,
-                      ),
-                      widget.model!.author != null &&
-                              widget.model!.author!.isNotEmpty
-                          ? Text(
-                              'Author: ${widget.model!.author!}',
-                              overflow: TextOverflow.fade,
-                              style: TextStyle(
-                                  color: Theme.of(context)
-                                      .textTheme
-                                      .headline4!
-                                      .color,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold),
-                            )
-                          : const SizedBox(),
-                      const SizedBox(
-                        height: 10,
-                      ),
-                      widget.model!.source != null &&
-                              widget.model!.source!.isNotEmpty
-                          ? Text(
-                              'Source: ${widget.model!.source!["name"]}',
-                              overflow: TextOverflow.fade,
-                              style: TextStyle(
-                                  color: Theme.of(context)
-                                      .textTheme
-                                      .headline4!
-                                      .color,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold),
-                            )
-                          : const SizedBox(),
-                      const SizedBox(
-                        height: 20,
-                      ),
-                      widget.model!.publishedAt != null &&
-                              widget.model!.publishedAt!.isNotEmpty
-                          ? Text(
-                              'Published At: ${widget.model!.publishedAt}',
-                              overflow: TextOverflow.fade,
-                              style: TextStyle(
-                                  color: Theme.of(context)
-                                      .textTheme
-                                      .headline4!
-                                      .color,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold),
-                            )
-                          : const SizedBox(),
-                      const SizedBox(
-                        height: 20,
-                      ),
-                      widget.model!.description != null &&
-                              widget.model!.description!.isNotEmpty
-                          ? Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Description:',
-                                  overflow: TextOverflow.fade,
-                                  style: TextStyle(
-                                      color: Theme.of(context)
-                                          .textTheme
-                                          .headline4!
-                                          .color,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                                SeeMoreWidget(
-                                  text: widget.model!.description,
-                                  textLength: contentMaxLenght,
-                                ),
-                              ],
-                            )
-                          : const SizedBox(),
-                      const SizedBox(
-                        height: 25,
-                      ),
-                      // widget.model!.content != null &&
-                      //         widget.model!.content!.isNotEmpty
-                      //     ? Row(
-                      //         crossAxisAlignment: CrossAxisAlignment.start,
-                      //         children: [
-                      //           Text(
-                      //             'Content: ',
-                      //             style: TextStyle(
-                      //               color: Theme.of(context)
-                      //                   .textTheme
-                      //                   .headline4!
-                      //                   .color,
-                      //               fontSize: 16,
-                      //               fontWeight: FontWeight.bold,
-                      //             ),
-                      //           ),
-                      //           Expanded(
-                      //             child: InkWell(
-                      //               onTap: () {
-                      //                 setState(() {
-                      //                   isMore = !isMore;
-                      //                 });
-                      //               },
-                      //               child: Column(
-                      //                 crossAxisAlignment:
-                      //                     CrossAxisAlignment.start,
-                      //                 children: [
-                      //                   Text(
-                      //                     '${widget.model!.content}',
-                      //                     maxLines: lines,
-                      //                     overflow: overFlow,
-                      //                     style: TextStyle(
-                      //                       color: Theme.of(context)
-                      //                           .textTheme
-                      //                           .headline4!
-                      //                           .color,
-                      //                       fontSize: 14,
-                      //                     ),
-                      //                   ),
-                      //                   seeMoreShown
-                      //                       ? Row(
-                      //                           mainAxisAlignment:
-                      //                               MainAxisAlignment.end,
-                      //                           children: [
-                      //                             InkWell(
-                      //                               onTap: () {
-                      //                                 setState(() {
-                      //                                   isMore = !isMore;
-                      //                                 });
-                      //                               },
-                      //                               child: Text(
-                      //                                 'See More',
-                      //                                 overflow:
-                      //                                     TextOverflow.ellipsis,
-                      //                                 style: TextStyle(
-                      //                                   color: Theme.of(context)
-                      //                                       .textTheme
-                      //                                       .headline4!
-                      //                                       .color!
-                      //                                       .withOpacity(0.4),
-                      //                                   fontSize: 14,
-                      //                                   fontWeight:
-                      //                                       FontWeight.bold,
-                      //                                 ),
-                      //                               ),
-                      //                             ),
-                      //                           ],
-                      //                         )
-                      //                       : const SizedBox(),
-                      //                 ],
-                      //               ),
-                      //             ),
-                      //           ),
-                      //         ],
-                      //       )
-                      //     : const SizedBox(),
-                      const SizedBox(
-                        height: 30,
-                      ),
-                      widget.model!.url != null && widget.model!.url!.isNotEmpty
-                          ? Row(
-                              children: [
-                                Text(
-                                  'Link To The News: ',
-                                  style: TextStyle(
-                                      color: Theme.of(context)
-                                          .textTheme
-                                          .headline4!
-                                          .color,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                                Expanded(
-                                  child: InkWell(
-                                    splashColor: Colors.blue.withOpacity(0.2),
-                                    onTap: () {
-                                      _launchUrl(widget.model!.url!, context);
-                                    },
-                                    child: Text(
-                                      widget.model!.url!,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        decoration: TextDecoration.underline,
-                                        color: Colors.blue,
+          body: NotificationListener<OverscrollIndicatorNotification>(
+            onNotification: (notification) {
+              notification.disallowGlow();
+              return false;
+            },
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Container(
+                    //width: MediaQuery.of(context).size.width,
+                    height: 250,
+                    child: _buildImage(),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.model!.title!,
+                          overflow: TextOverflow.fade,
+                          style: TextStyle(
+                              color:
+                                  Theme.of(context).textTheme.headline4!.color,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(
+                          height: 10,
+                        ),
+                        widget.model!.author != null &&
+                                widget.model!.author!.isNotEmpty
+                            ? Text(
+                                'Author: ${widget.model!.author!}',
+                                overflow: TextOverflow.fade,
+                                style: TextStyle(
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .headline4!
+                                        .color,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold),
+                              )
+                            : const SizedBox(),
+                        const SizedBox(
+                          height: 10,
+                        ),
+                        widget.model!.source != null &&
+                                widget.model!.source!.isNotEmpty
+                            ? Text(
+                                'Source: ${widget.model!.source!["name"]}',
+                                overflow: TextOverflow.fade,
+                                style: TextStyle(
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .headline4!
+                                        .color,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold),
+                              )
+                            : const SizedBox(),
+                        const SizedBox(
+                          height: 20,
+                        ),
+                        widget.model!.publishedAt != null &&
+                                widget.model!.publishedAt!.isNotEmpty
+                            ? Text(
+                                'Published At: ${widget.model!.publishedAt}',
+                                overflow: TextOverflow.fade,
+                                style: TextStyle(
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .headline4!
+                                        .color,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold),
+                              )
+                            : const SizedBox(),
+                        const SizedBox(
+                          height: 20,
+                        ),
+                        widget.model!.description != null &&
+                                widget.model!.description!.isNotEmpty
+                            ? Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Description:',
+                                    overflow: TextOverflow.fade,
+                                    style: TextStyle(
+                                        color: Theme.of(context)
+                                            .textTheme
+                                            .headline4!
+                                            .color,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  SeeMoreWidget(
+                                    text: widget.model!.description,
+                                    textLength: contentMaxLenght,
+                                  ),
+                                ],
+                              )
+                            : const SizedBox(),
+                        const SizedBox(
+                          height: 25,
+                        ),
+                        // widget.model!.content != null &&
+                        //         widget.model!.content!.isNotEmpty
+                        //     ? Row(
+                        //         crossAxisAlignment: CrossAxisAlignment.start,
+                        //         children: [
+                        //           Text(
+                        //             'Content: ',
+                        //             style: TextStyle(
+                        //               color: Theme.of(context)
+                        //                   .textTheme
+                        //                   .headline4!
+                        //                   .color,
+                        //               fontSize: 16,
+                        //               fontWeight: FontWeight.bold,
+                        //             ),
+                        //           ),
+                        //           Expanded(
+                        //             child: InkWell(
+                        //               onTap: () {
+                        //                 setState(() {
+                        //                   isMore = !isMore;
+                        //                 });
+                        //               },
+                        //               child: Column(
+                        //                 crossAxisAlignment:
+                        //                     CrossAxisAlignment.start,
+                        //                 children: [
+                        //                   Text(
+                        //                     '${widget.model!.content}',
+                        //                     maxLines: lines,
+                        //                     overflow: overFlow,
+                        //                     style: TextStyle(
+                        //                       color: Theme.of(context)
+                        //                           .textTheme
+                        //                           .headline4!
+                        //                           .color,
+                        //                       fontSize: 14,
+                        //                     ),
+                        //                   ),
+                        //                   seeMoreShown
+                        //                       ? Row(
+                        //                           mainAxisAlignment:
+                        //                               MainAxisAlignment.end,
+                        //                           children: [
+                        //                             InkWell(
+                        //                               onTap: () {
+                        //                                 setState(() {
+                        //                                   isMore = !isMore;
+                        //                                 });
+                        //                               },
+                        //                               child: Text(
+                        //                                 'See More',
+                        //                                 overflow:
+                        //                                     TextOverflow.ellipsis,
+                        //                                 style: TextStyle(
+                        //                                   color: Theme.of(context)
+                        //                                       .textTheme
+                        //                                       .headline4!
+                        //                                       .color!
+                        //                                       .withOpacity(0.4),
+                        //                                   fontSize: 14,
+                        //                                   fontWeight:
+                        //                                       FontWeight.bold,
+                        //                                 ),
+                        //                               ),
+                        //                             ),
+                        //                           ],
+                        //                         )
+                        //                       : const SizedBox(),
+                        //                 ],
+                        //               ),
+                        //             ),
+                        //           ),
+                        //         ],
+                        //       )
+                        //     : const SizedBox(),
+                        const SizedBox(
+                          height: 30,
+                        ),
+                        widget.model!.url != null &&
+                                widget.model!.url!.isNotEmpty
+                            ? Row(
+                                children: [
+                                  Text(
+                                    'Link To The News: ',
+                                    style: TextStyle(
+                                        color: Theme.of(context)
+                                            .textTheme
+                                            .headline4!
+                                            .color,
                                         fontSize: 14,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  Expanded(
+                                    child: InkWell(
+                                      splashColor: Colors.blue.withOpacity(0.2),
+                                      onTap: () {
+                                        _launchUrl(widget.model!.url!, context);
+                                      },
+                                      child: Text(
+                                        widget.model!.url!,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          decoration: TextDecoration.underline,
+                                          color: Colors.blue,
+                                          fontSize: 14,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            )
-                          : const SizedBox(),
-                      const SizedBox(
-                        height: 20,
-                      ),
-                    ],
-                  ),
-                )
-              ],
+                                ],
+                              )
+                            : const SizedBox(),
+                        const SizedBox(
+                          height: 20,
+                        ),
+                      ],
+                    ),
+                  )
+                ],
+              ),
             ),
           ),
         ),
