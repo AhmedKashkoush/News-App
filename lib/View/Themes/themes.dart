@@ -26,24 +26,22 @@ class AppTheme {
 
   static final ThemeData? lightTheme = ThemeData(
     primaryColor: Colors.red,
-    primarySwatch: Colors.red,
     scaffoldBackgroundColor: Colors.white,
     //appBarTheme: AppBarTheme(iconTheme: IconThemeData(color: Colors.black87)),
     backgroundColor: Colors.white,
     iconTheme: IconThemeData(color: Colors.black87),
     textTheme:
         TextTheme(headline4: TextStyle(color: Colors.black87, fontSize: 16)),
-    //splashColor: Colors.transparent,
-    accentColor: Colors.blueAccent,
     highlightColor: Colors.transparent,
     splashFactory: InkRipple.splashFactory,
     //pageTransitionsTheme: _pageTransition,
     visualDensity: VisualDensity.adaptivePlatformDensity,
+    colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.red)
+        .copyWith(secondary: Colors.blueAccent),
   );
 
   static final ThemeData? darkTheme = ThemeData(
     primaryColor: Colors.grey[850],
-    primarySwatch: Colors.red,
     scaffoldBackgroundColor: Colors.grey[900],
     //appBarTheme: AppBarTheme(iconTheme: IconThemeData(color: Colors.white)),
     backgroundColor: Colors.grey[850],
@@ -51,12 +49,12 @@ class AppTheme {
     textTheme: TextTheme(
       headline4: TextStyle(color: Colors.white, fontSize: 16),
     ),
-    //splashColor: Colors.transparent,
-    accentColor: Colors.blueAccent,
     highlightColor: Colors.transparent,
     splashFactory: InkRipple.splashFactory,
     //pageTransitionsTheme: _pageTransition,
     visualDensity: VisualDensity.adaptivePlatformDensity,
+    colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.red)
+        .copyWith(secondary: Colors.blueAccent),
   );
   //static ThemeMode getThemeMode({String? themeMode})
 

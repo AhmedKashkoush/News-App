@@ -112,7 +112,7 @@ class _NewsScreenState extends State<NewsScreen> {
           ),
           body: NotificationListener<OverscrollIndicatorNotification>(
             onNotification: (notification) {
-              notification.disallowGlow();
+              notification.disallowIndicator();
               return false;
             },
             child: SingleChildScrollView(
